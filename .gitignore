@@ -43,3 +43,36 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+
+# Build outputs
+build/
+ios/Pods/
+android/.gradle/
+android/app/build/
+*.aar
+*.iml
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+
+# Generated files
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# macOS specific
+.DS_Store
+
+# Windows specific
+Thumbs.db
+
+# Other
+*.log

@@ -48,7 +48,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
   Set<int> selectedServiceIndices = {};
   bool _isFavorite = false;
   int _userRating = 5;
-
   final List<Map<String, dynamic>> reviews = [
     {
       "name": "Adam",
@@ -70,7 +69,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       "rating": 5
     },
   ];
-
   final TextEditingController _reviewController = TextEditingController();
 
   @override
@@ -193,8 +191,8 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     _navigateToScheduleTab();
   }
 
-  // --- START OF FIX ---
-  // This function now handles the final booking logic and navigation.
+  // --- CORRECTED FIX ---
+  // Simplified and robust navigation function using Future.delayed and mounted check.
   void _confirmAndNavigate() {
     final loc = AppLocalizations.of(context)!;
     final selectedServices = selectedServiceIndices
@@ -205,18 +203,16 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     // Log the booking details for debugging.
     print('Booking confirmed for ${widget.barber.name} for slot: $selectedSlot, services: ${selectedServices.map((s) => s.name).join(', ')}');
 
-    // --- CRITICAL FIX ---
-    // Capture the necessary state objects *immediately* while context is valid.
-    // This prevents errors if the widget is unmounted during async operations or after dialog closes.
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
+    // --- DIRECT AND SAFE FIX ---
+    // Define the snackbar message
+    final String snackbarMessage = loc.bookingConfirmedNow ??
+        'Your booking is confirmed! You will receive a confirmation shortly.';
 
-    // Show the confirmation Snackbar message *first* using the captured state.
-    scaffoldMessenger.showSnackBar(
+    // Show the confirmation Snackbar message immediately.
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          loc.bookingConfirmedNow ??
-              'Your booking is confirmed! You will receive a confirmation shortly.',
+          snackbarMessage,
           style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: mainBlue,
@@ -224,34 +220,47 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       ),
     );
 
-    // Navigate to the Bookings Management Screen using the captured state.
-    // Using push instead of pushAndRemoveUntil is generally safer unless you need to clear the stack.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      navigator.push(
-        MaterialPageRoute(
-          builder: (context) => const BookingsManagementScreen(snackbarMessage: '',),
-          // Removed snackbarMessage parameter as it's handled above.
-        ),
-      );
+    // Navigate to the Bookings Management Screen after a brief delay.
+    // This ensures the snackbar starts showing.
+    // Using 'mounted' check is the safest way to prevent navigation if the widget is disposed.
+    Future.delayed(const Duration(milliseconds: 100), () {
+      // Double-check mounted status and required conditions before navigating
+      if (mounted &&
+          selectedServiceIndices.isNotEmpty &&
+          _selectedTimeSlotForBooking != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => BookingsManagementScreen(
+                // Pass the snackbarMessage as required
+                snackbarMessage: snackbarMessage),
+          ),
+        );
+      } else {
+        // Log if navigation was skipped
+        print("Navigation skipped: mounted=$mounted, services=${selectedServiceIndices.isNotEmpty}, slot=${_selectedTimeSlotForBooking != null}");
+      }
     });
-    // --- END OF CRITICAL FIX ---
+    // --- END OF DIRECT AND SAFE FIX ---
   }
-  // --- END OF FIX ---
+  // --- END OF CORRECTED FIX ---
 
   Future<void> _showFinalBookingConfirmationDialog() async {
     final loc = AppLocalizations.of(context)!;
+    // Ensure conditions are met before showing dialog
     if (selectedServiceIndices.isEmpty || _selectedTimeSlotForBooking == null) {
+       print("Cannot show confirmation dialog: Services or time slot missing.");
       return;
     }
+
     final List<Service> selectedServices = selectedServiceIndices
         .map((index) => widget.barber.services[index])
         .toList();
     final String selectedSlot = _selectedTimeSlotForBooking!;
 
-    // Use a local context variable for the dialog to isolate its context lifecycle.
+    // Show the dialog and await the user's choice.
     final confirm = await showDialog<bool>(
-      context: context, // Use the main screen's context to show the dialog
-      builder: (BuildContext dialogContext) { // Use dialogContext inside the builder
+      context: context, // Use the main screen's context
+      builder: (BuildContext dialogContext) {
         final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
         final Color dialogBgColor = isDark ? Colors.grey[850]! : Colors.white;
         final Color textColor = isDark ? Colors.white : Colors.black87;
@@ -293,14 +302,32 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false), // Use dialogContext
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: Text(
                 loc.cancel ?? 'Cancel',
                 style: TextStyle(color: isDark ? Colors.white : mainBlue),
               ),
             ),
+            // --- CRITICAL FIX ---
+            // Handle confirmation directly within the button's onPressed.
+            // Pop the dialog first, then schedule navigation.
             ElevatedButton(
-              onPressed: () => Navigator.pop(dialogContext, true), // Use dialogContext
+              onPressed: () {
+                 // 1. Pop the dialog immediately
+                 Navigator.pop(dialogContext, true);
+
+                 // 2. Schedule the final navigation logic after the dialog closes.
+                 // Using microtask ensures it runs after the dialog's context is fully disposed.
+                 Future.microtask(() {
+                   // Check if the widget is still mounted before proceeding
+                   if (mounted) {
+                     _confirmAndNavigate(); // Call the navigation function
+                   } else {
+                     print("Widget unmounted, skipping navigation after dialog confirm.");
+                   }
+                 });
+              },
+              // --- END OF CRITICAL FIX ---
               style: ElevatedButton.styleFrom(
                 backgroundColor: mainBlue,
                 foregroundColor: Colors.white,
@@ -314,54 +341,73 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       },
     );
 
-    // If the user confirms, call the new centralized function.
-    // The context used inside _confirmAndNavigate is now captured safely.
-    if (confirm == true) {
-      _confirmAndNavigate();
-    }
+    // --- REMOVED REDUNDANT CALL ---
+    // The navigation logic is now handled by the button's onPressed callback.
+    // Calling _confirmAndNavigate() here again could lead to double navigation or context issues.
+    // --- END OF REMOVAL ---
   }
 
+  Future<void> _showServiceSelectionSheet(String selectedSlot) async {
+  final loc = AppLocalizations.of(context)!;
 
-  Future<void> _showServiceSelectionSheet() async {
-    final loc = AppLocalizations.of(context)!;
-    final List<Service>? confirmedServices = await showModalBottomSheet<List<Service>?>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        final List<Service> initialSelectedServices = selectedServiceIndices
-            .map((index) => widget.barber.services.elementAtOrNull(index))
-            .whereType<Service>()
-            .toList();
-        return ServiceSelectionSheet(
-          services: widget.barber.services,
-          title: loc.selectServices ?? 'Select Services',
-          initialSelectedServices: initialSelectedServices,
-          onSelectionUpdate: (List<Service> updatedSelection) {},
-          onConfirm: (List<Service> selected) {
-            Navigator.pop(context, selected);
-          },
-        );
-      },
-    );
-    if (confirmedServices != null && confirmedServices.isNotEmpty) {
-      setState(() {
-        selectedServiceIndices = confirmedServices
-            .map((service) => widget.barber.services.indexOf(service))
-            .where((index) => index != -1)
-            .toSet();
-      });
-      // After services are confirmed, show the final booking dialog.
-      _showFinalBookingConfirmationDialog();
-    } else {
-      // If the user cancels the service selection, reset the selected time slot.
-      setState(() {
-        _selectedTimeSlotForBooking = null;
+  final List<Service>? confirmedServices = await showModalBottomSheet<List<Service>?>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (BuildContext sheetContext) {
+      final List<Service> initialSelectedServices = selectedServiceIndices
+          .map((index) => widget.barber.services.elementAtOrNull(index))
+          .whereType<Service>()
+          .toList();
+
+      return ServiceSelectionSheet(
+        services: widget.barber.services,
+        title: loc.selectServices ?? 'Select Services',
+        initialSelectedServices: initialSelectedServices,
+        onSelectionUpdate: (List<Service> updatedSelection) {
+          // optional live updates
+        },
+        onConfirm: (List<Service> selected) {
+          // ✅ Close the sheet and return selected services
+          Navigator.pop(sheetContext, selected);
+        },
+      );
+    },
+  );
+
+  if (confirmedServices != null && confirmedServices.isNotEmpty) {
+    setState(() {
+      selectedServiceIndices = confirmedServices
+          .map((service) => widget.barber.services.indexOf(service))
+          .where((index) => index != -1)
+          .toSet();
+
+      // ✅ Save the slot chosen earlier
+      _selectedTimeSlotForBooking = selectedSlot;
+    });
+
+    // --- CRITICAL FIX FOR SCENARIO B ---
+    if (_selectedTimeSlotForBooking != null && selectedServiceIndices.isNotEmpty) {
+      Future.microtask(() {
+        if (mounted) {
+          // ✅ Call the SAME final confirmation dialog as Scenario A
+          _showFinalBookingConfirmationDialog();
+        } else {
+          debugPrint("Widget unmounted, skipping dialog after service selection.");
+        }
       });
     }
+    // --- END OF FIX ---
+  } else {
+    // If the user cancels, reset slot
+    setState(() {
+      _selectedTimeSlotForBooking = null;
+    });
   }
+}
+
 
   Widget _buildAboutSection() {
     final loc = AppLocalizations.of(context)!;
@@ -480,7 +526,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                       ),
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),
@@ -494,7 +540,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color cardBg = isDark ? Colors.grey[850]! : Colors.white;
     final Color borderColor = isDark ? Colors.grey[700]! : Colors.grey[300]!;
-
     return Column(
       children: [
         const SizedBox(height: 12),
@@ -562,7 +607,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)}',
+                            NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 4),
@@ -611,15 +656,14 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     final loc = AppLocalizations.of(context)!;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final List<String> shortWeekdayNames = [
-      loc.monday?.substring(0, 3).toUpperCase() ?? 'MON',
-      loc.tuesday?.substring(0, 3).toUpperCase() ?? 'TUE',
-      loc.wednesday?.substring(0, 3).toUpperCase() ?? 'WED',
-      loc.thursday?.substring(0, 3).toUpperCase() ?? 'THU',
-      loc.friday?.substring(0, 3).toUpperCase() ?? 'FRI',
-      loc.saturday?.substring(0, 3).toUpperCase() ?? 'SAT',
-      loc.sunday?.substring(0, 3).toUpperCase() ?? 'SUN',
+      loc.monday.substring(0, 3).toUpperCase() ?? 'MON',
+      loc.tuesday.substring(0, 3).toUpperCase() ?? 'TUE',
+      loc.wednesday.substring(0, 3).toUpperCase() ?? 'WED',
+      loc.thursday.substring(0, 3).toUpperCase() ?? 'THU',
+      loc.friday.substring(0, 3).toUpperCase() ?? 'FRI',
+      loc.saturday.substring(0, 3).toUpperCase() ?? 'SAT',
+      loc.sunday.substring(0, 3).toUpperCase() ?? 'SUN',
     ];
-
     List<String> generateAllTimeSlots() {
       final slots = <String>[];
       for (int hour = 9; hour < 23; hour++) {
@@ -628,10 +672,8 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       }
       return slots;
     }
-
     final allTimeSlots = generateAllTimeSlots();
-    final spacing = 10.0;
-
+    const spacing = 10.0;
     final Map<int, Set<String>> dailyAvailability = {
       0: Set.from(allTimeSlots)..removeAll(['12:00', '12:30', '13:00']),
       1: Set.from(allTimeSlots),
@@ -641,9 +683,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       5: Set.from(allTimeSlots.where((s) => int.parse(s.split(':')[0]) >= 10 && int.parse(s.split(':')[0]) < 18)),
       6: <String>{},
     };
-
     final availableSlotsForSelectedDay = dailyAvailability[_selectedDayIndex] ?? <String>{};
-
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
@@ -721,7 +761,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final slotWidthEstimate = 85.0;
+                  const slotWidthEstimate = 85.0;
                   final crossAxisCount = (constraints.maxWidth ~/ slotWidthEstimate).clamp(3, 5);
                   return GridView.builder(
                     shrinkWrap: true,
@@ -737,11 +777,9 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                       final slot = allTimeSlots[index];
                       final isAvailable = availableSlotsForSelectedDay.contains(slot);
                       final isSelected = _selectedTimeSlotForBooking == slot;
-
                       Color bgColor = Theme.of(context).cardColor;
                       Color fgColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
                       Color borderColor = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300;
-
                       if (!isAvailable) {
                         bgColor = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
                         fgColor = isDarkMode ? Colors.grey.shade600 : Colors.grey.shade500;
@@ -751,19 +789,18 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                         borderColor = mainBlue;
                         fgColor = Colors.white;
                       }
-
                       return GestureDetector(
                         onTap: isAvailable
                             ? () {
                                 setState(() {
                                   _selectedTimeSlotForBooking = slot;
                                 });
-                                // If services are already selected, go to confirmation.
-                                // Otherwise, show the service selection sheet.
+                                // If services are already selected, go to confirmation (Scenario A).
+                                // Otherwise, show the service selection sheet (Scenario B).
                                 if (selectedServiceIndices.isNotEmpty) {
                                   _showFinalBookingConfirmationDialog();
                                 } else {
-                                  _showServiceSelectionSheet();
+                                   _showServiceSelectionSheet(slot);
                                 }
                               }
                             : null,
@@ -806,7 +843,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     final Color textColor = isDark ? Colors.white : Colors.black87;
     final Color? subtitleColor = isDark ? Colors.grey[400]! : Colors.grey[600];
     final Color cardBg = isDark ? Colors.grey[850]! : Colors.white;
-
     List<Map<String, String>> workingHours = [
       {'day': loc.monday ?? 'Monday', 'hours': '09:00 AM - 08:00 PM'},
       {'day': loc.tuesday ?? 'Tuesday', 'hours': '09:00 AM - 08:00 PM'},
@@ -816,7 +852,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       {'day': loc.saturday ?? 'Saturday', 'hours': '10:00 AM - 06:00 PM'},
       {'day': loc.sunday ?? 'Sunday', 'hours': 'Closed'},
     ];
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -914,7 +949,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     final Color textColor = isDark ? Colors.white : Colors.black87;
     final Color? subtitleColor = isDark ? Colors.grey[400]! : Colors.grey[600];
     final Color cardBg = isDark ? Colors.grey[850]! : Colors.white;
-
     return Column(
       children: [
         Expanded(
@@ -984,7 +1018,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                   String formattedDate = DateFormat.yMMMd(
                           Localizations.localeOf(context).toString())
                       .format(parsedDate);
-
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
                     color: isDark ? Colors.grey[800] : Colors.grey[50],
@@ -1140,7 +1173,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
 
   Future<void> _submitReview(BuildContext context, AppLocalizations loc,
       bool isDark, Color textColor, Color subtitleColor, Color cardBg) async {
-    // ... (No changes to _submitReview)
     final String reviewText = _reviewController.text.trim();
     if (reviewText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1155,14 +1187,12 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
       return;
     }
-
     String? currentUserId;
     try {
       currentUserId = _getCurrentUserId();
     } catch (authError) {
       print("Authentication check error: $authError");
     }
-
     if (currentUserId == null || currentUserId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1177,7 +1207,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
       return;
     }
-
     bool hasBookedWithThisBarber = false;
     try {
       hasBookedWithThisBarber = await _hasUserBookedWithBarber(
@@ -1197,7 +1226,6 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
       return;
     }
-
     if (!hasBookedWithThisBarber) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1212,13 +1240,11 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
       return;
     }
-
     try {
       print(
           'Submitting review: Text=$reviewText, UserId=$currentUserId, BarberId=${widget.barber.id}, Rating=$_userRating');
       await Future.delayed(const Duration(milliseconds: 500));
-      if (!context.mounted) return;
-
+      if (!context.mounted) return; // Check mounted before using context
       final newReview = {
         "name": loc.you ?? "You",
         "comment": reviewText,
@@ -1226,16 +1252,13 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
             .format(DateTime.now()),
         "rating": _userRating,
       };
-
       setState(() {
         reviews.insert(0, newReview);
       });
-
       _reviewController.clear();
       setState(() {
         _userRating = 5;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1249,7 +1272,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
     } catch (e) {
       print("Error submitting review: $e");
-      if (!context.mounted) return;
+      if (!context.mounted) return; // Check mounted before using context
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1264,21 +1287,19 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    // ... (Updated build method to reflect new tab order)
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final loc = AppLocalizations.of(context)!;
     final Color scaffoldBg = isDark ? const Color(0xFF121212) : Colors.white;
     final Color cardBg = isDark ? Colors.grey[850]! : Colors.white;
     final Color textColor = isDark ? Colors.white : Colors.black87;
     final Color? subtitleColor = isDark ? Colors.grey[400]! : Colors.grey[600];
-
     final List<String> effectiveHeaderImagePaths =
         widget.barber.galleryImages?.isNotEmpty == true
             ? widget.barber.galleryImages!
             : [widget.barber.image ?? 'assets/images/default_barber.jpg'];
-
     return Scaffold(
       backgroundColor: scaffoldBg,
       body: NestedScrollView(

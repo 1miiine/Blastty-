@@ -9,7 +9,6 @@ import 'package:intl/intl.dart'; // Import for currency formatting
 // --- NEW: Import the custom ResponsiveSliverAppBar ---
 import '../widgets/shared/responsive_sliver_app_bar.dart'; // Adjust path if necessary
 // --- NEW: Import BookingsManagementScreen ---
-import 'bookings_management_screen.dart';
 // --- END NEW ---
 
 const Color mainBlue = Color(0xFF3434C6);
@@ -500,7 +499,7 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                                '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)}',
+                                NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
                                 style: const TextStyle(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 4),
                             Text('${service.duration.inMinutes} ${loc.mins}',

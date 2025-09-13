@@ -7,7 +7,6 @@ import '../models/service.dart';
 import '../l10n/app_localizations.dart';
 import 'schedule_view_screen.dart';
 import 'bookings_management_screen.dart'; 
-import 'package:material_symbols_icons/symbols.dart';
 
 const Color mainBlue = Color(0xFF3434C6);
 
@@ -298,16 +297,14 @@ class _BarbersScreenState extends State<BarbersScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -348,16 +345,14 @@ class _BarbersScreenState extends State<BarbersScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -533,7 +528,7 @@ class _BarbersScreenState extends State<BarbersScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        selectedLocation ?? "${loc.where}",
+                        selectedLocation ?? loc.where,
                         style: TextStyle(
                           fontSize: 14,
                           color: isDark ? Colors.white : Colors.black87,
@@ -565,7 +560,7 @@ class _BarbersScreenState extends State<BarbersScreen> {
                       child: Text(
                         selectedDate != null
                             ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
-                            : "${loc.when}",
+                            : loc.when,
                         style: TextStyle(
                           fontSize: 14,
                           color: isDark ? Colors.white : Colors.black87,
@@ -1011,7 +1006,7 @@ class _EnhancedBarberCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 2), // Reduced spacing
                           Text(
-                            '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)}',
+                            NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
                             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: textColor), // Smaller font
                           ),
                           Text(
@@ -1049,7 +1044,7 @@ class _EnhancedBarberCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onBookLater,
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: mainBlue, width: 2.0),
+                      side: const BorderSide(color: mainBlue, width: 2.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 10), // Reduced padding
                     ),
@@ -1206,7 +1201,7 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                                '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)}',
+                                NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
                                 style: const TextStyle(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 4),
                             Text('${service.duration.inMinutes} ${loc.mins}',
@@ -1231,7 +1226,7 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
                   foregroundColor: mainBlue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: mainBlue),
+                    side: const BorderSide(color: mainBlue),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),

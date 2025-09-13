@@ -1,6 +1,6 @@
 // lib/widgets/service_selection_sheet.dart
 import 'package:flutter/material.dart';
-import '../models/barber_model.dart'; // Import your Barber and Service models
+// Import your Barber and Service models
 import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../models/service.dart'; // For formatting duration if needed

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart'; // Assuming you use this
 import '../../../l10n/app_localizations.dart';
-import 'barber_login_screen.dart'; // Import login screen
+// Import login screen
 import '../../../widgets/language_switcher_button.dart'; // Assuming you have this
 // import '../../auth/role_selection_screen.dart'; // --- REMOVED: No longer needed for back navigation ---
 

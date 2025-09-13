@@ -3,8 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:syncfusion_flutter_charts/charts.dart'; 
 import 'package:intl/intl.dart'; 
 import '../../l10n/app_localizations.dart';
-import '../../providers/barber/barber_analytics_provider.dart'; // To fetch real data
-import 'package:provider/provider.dart';
+// To fetch real data
 import '../../theme/colors.dart';
 import '../../widgets/shared/responsive_sliver_app_bar.dart';
 /// A screen that provides a detailed breakdown of the barber's revenue.

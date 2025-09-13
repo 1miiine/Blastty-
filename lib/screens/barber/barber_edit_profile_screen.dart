@@ -8,7 +8,6 @@ import '../../l10n/app_localizations.dart';
 import '../../models/barber_model.dart';
 import '../../providers/barber/barber_profile_provider.dart';
 import '../../widgets/barber_primary_button.dart';
-import '../../theme/colors.dart';
 
 const Color mainBlue = Color(0xFF3434C6);
 
@@ -178,7 +177,7 @@ class _BarberEditProfileScreenState extends State<BarberEditProfileScreen> {
             setState(() => _isLoading = false);
             return;
         }
-        if (occupiedSeats! > totalSeats!) {
+        if (occupiedSeats > totalSeats) {
            if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(localizations.occupiedSeatsCannotExceedTotal ?? 'Occupied seats cannot exceed total seats.'), backgroundColor: Colors.red),

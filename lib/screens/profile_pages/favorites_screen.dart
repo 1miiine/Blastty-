@@ -116,7 +116,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   late Animation<double> _titleOpacity;
   late Animation<Offset> _titleSlide;
 
-  bool _bookingInProgress = false;
+  final bool _bookingInProgress = false;
 
   @override
   void initState() {
@@ -662,16 +662,14 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -713,16 +711,14 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -1192,7 +1188,6 @@ class _MultiServiceSelectionSheet extends StatefulWidget {
   // --- END OF NEW ---
 
   const _MultiServiceSelectionSheet({
-    super.key,
     required this.services,
     required this.title,
     required this.initialSelectedServices,
@@ -1369,7 +1364,7 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)}',
+                                      NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
                                       style: const TextStyle(fontWeight: FontWeight.w600),
                                     ),
                                     const SizedBox(height: 4),

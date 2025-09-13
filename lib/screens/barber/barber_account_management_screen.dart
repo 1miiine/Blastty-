@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // If using Provider for profile
+// If using Provider for profile
 import '../../l10n/app_localizations.dart';
 // --- FIX 1: Correct import for the shared app bar ---
 // Assuming the file exists and contains ResponsiveSliverAppBar based on ProfileScreen.dart
 import '../../widgets/shared/responsive_sliver_app_bar.dart';
 import '../../models/barber_model.dart'; // Assuming you have a Barber model
-import '../../providers/barber/barber_profile_provider.dart'; // Assuming you have a provider
+// Assuming you have a provider
 // --- FIX 2: Import mainBlue correctly ---
 import '../../theme/colors.dart'; // Assuming mainBlue is defined here
 // --- NEW: Import BarberEditProfileScreen ---

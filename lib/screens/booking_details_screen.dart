@@ -678,7 +678,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
               // --- ADD: Show time remaining ---
               Text(
                 '${localizations.timeRemaining}: ${_getTimeRemainingUntilCompletion(localizations)}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.red,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

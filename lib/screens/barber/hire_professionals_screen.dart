@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart'; // For launching phone/email
 import 'package:intl/intl.dart'; // For date/time formatting
-import 'package:flutter/foundation.dart'; // For VoidCallback if needed, but mainly for completeness
+// For VoidCallback if needed, but mainly for completeness
 import '../../../l10n/app_localizations.dart';
-import '../../../theme/colors.dart'; // Assuming mainBlue, successGreen, warningOrange, errorRed are defined
+// Assuming mainBlue, successGreen, warningOrange, errorRed are defined
 // --- ADD: Import ResponsiveSliverAppBar ---
 import '../../widgets/shared/responsive_sliver_app_bar.dart';
 // --- IMPORT: Classes from BarberMyProfessionalsScreen for consistency ---
@@ -337,7 +337,7 @@ class _HireProfessionalsScreenState extends State<HireProfessionalsScreen> {
           genders: genderOptions, // Pass internal values
           selectedCities: _selectedCities,
           selectedSpecialties: _selectedSpecialties,
-          selectedStatuses: {}, // Pass empty set or relevant selections if needed by the copied sheet
+          selectedStatuses: const {}, // Pass empty set or relevant selections if needed by the copied sheet
           selectedGenders: _selectedGenders,
         );
       },
@@ -1090,7 +1090,6 @@ class _FilterBottomSheet extends StatefulWidget {
   final Set<String> selectedGenders;
 
   const _FilterBottomSheet({
-    super.key,
     required this.cities,
     required this.specialties,
     required this.statuses,

@@ -5,22 +5,22 @@ import '../../../l10n/app_localizations.dart';
 import 'barber_register_screen.dart';
 import 'barber_forgot_password_screen.dart';
 import '../../../widgets/language_switcher_button.dart';
-import '../../auth/role_selection_screen.dart'; // --- NEW: Import Role Selection Screen ---
-// No longer need to import BarberMainNavigation here, we use named routes.
+import '../../auth/role_selection_screen.dart';
+import '../../../services/auth_service.dart'; // <-- IMPORT THE NEW AUTH SERVICE
 
 class BarberLoginScreen extends StatefulWidget {
   static const String routeName = '/barber/login';
 
   final Locale currentLocale;
   final Function(Locale) onLocaleChange;
-  final String intendedRole; // Note: This seems unused in the current logic
+  final String intendedRole;
   final void Function(bool) onThemeChange;
 
   const BarberLoginScreen({
     super.key,
     required this.currentLocale,
     required this.onLocaleChange,
-    required this.intendedRole, // Note: This seems unused in the current logic
+    required this.intendedRole,
     required this.onThemeChange,
   });
 
@@ -37,61 +37,51 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
   bool _isPasswordObscured = true;
   final mainBlue = const Color(0xFF3434C6);
 
+  // --- NEW: Instance of our AuthService ---
+  final AuthService _authService = AuthService();
+
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() { _isLoading = true; });
 
-      await Future.delayed(const Duration(seconds: 2));
+      // --- MODIFICATION: Use the AuthService ---
+      final result = await _authService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        'professional', // Specify the role for the professional login endpoint
+      );
 
-      String? userRole;
-      // Example authentication logic (replace with your actual service)
-      if (_emailController.text == 'barber@example.com' &&
-          _passwordController.text == 'barber123') {
-        userRole = 'barber';
-      }
-      // Real app example:
-      // try {
-      //   final user = await authService.signInWithEmailAndPassword(_emailController.text, _passwordController.text);
-      //   userRole = user.role; // Assuming your user object/model has a 'role' field
-      //   // Save tokens, user data etc. using shared_preferences or secure storage
-      // } catch (authError) {
-      //   // Handle specific auth errors (wrong password, user not found etc.)
-      //   // e.g., showSnackBar(context, localizations.invalidCredentials);
-      //   // setState(_isLoading = false);
-      //   // return;
-      // }
+      if (!mounted) return;
 
-      if (userRole == 'barber') {
-        // --- SUCCESSFUL LOGIN ---
-        // No need to set isLoading to false here, as we are navigating away.
-        final localizations = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.loginSuccessful ?? 'Login successful', style: const TextStyle(color: Colors.white)), // Updated text color
-            backgroundColor: mainBlue,
-            duration: const Duration(milliseconds: 900),
-          ),
-        );
+      if (result['success'] == true) {
+        final userRole = result['user']['role'];
 
-        // --- FIX: Navigate to the barber's home screen and clear the auth stack ---
-        if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/barber/home', (Route<dynamic> route) => false);
-        }
-
-      } else {
-        // --- FAILED LOGIN (Invalid Credentials or other auth error) ---
-        setState(() {
-          _isLoading = false;
-        });
-        final localizations = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.invalidCredentials ?? 'Invalid barber credentials',
-              style: const TextStyle(color: Colors.white), // Updated text color
+        // Ensure the role is 'professional' or 'owner' to access the barber dashboard
+        if (userRole == 'professional' || userRole == 'owner') {
+          final localizations = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.loginSuccessful ?? 'Login successful', style: const TextStyle(color: Colors.white)),
+              backgroundColor: mainBlue,
+              duration: const Duration(milliseconds: 900),
             ),
+          );
+          
+          Navigator.of(context).pushNamedAndRemoveUntil('/barber/home', (Route<dynamic> route) => false);
+        } else {
+          // If a regular user tries to log in here
+          setState(() { _isLoading = false; });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Access denied. This login is for professionals only."), backgroundColor: Colors.red),
+          );
+        }
+      } else {
+        // FAILED LOGIN
+        setState(() { _isLoading = false; });
+        final localizations = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? localizations.invalidCredentials, style: const TextStyle(color: Colors.white)),
             backgroundColor: Colors.red,
           ),
         );
@@ -108,6 +98,8 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ... The entire build method remains exactly the same ...
+    // It will now work with the new _login() logic.
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
     final textTheme = theme.textTheme;
@@ -115,25 +107,20 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
 
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
-      // --- UPDATED: APPBAR WITH BACK BUTTON ---
       appBar: AppBar(
         backgroundColor: mainBlue,
         foregroundColor: Colors.white,
-        // --- NEW: Added leading back button ---
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Navigate back to role selection
             Navigator.pushReplacementNamed(context, RoleSelectionScreen.routeName);
           },
         ),
-        // --- END OF NEW ---
         title: Text(
           localizations.barberLoginTitle ?? 'Barber Login',
           style: const TextStyle(
             fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        // --- CHANGED: Disable automatic leading to use custom leading ---
         automaticallyImplyLeading: false,
         actions: [
           LanguageSwitcherButton(
@@ -142,7 +129,6 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
           ),
         ],
       ),
-      // --- END OF UPDATE ---
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -323,64 +309,60 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        // --- NEW: Consistent Social Login Icons using only Flutter Icons ---
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            // --- Google Sign-In (Slightly larger icon) ---
                             IconButton(
-                              iconSize: 40, // Match IconButton size
+                              iconSize: 40,
                               icon: Icon(
-                                Icons.g_mobiledata, // Standard Google 'G' icon from Flutter
-                                color: isDarkMode ? Colors.white : Colors.black, // Theme-based color
-                                size: 45, // Increased size for Google icon
+                                Icons.g_mobiledata,
+                                color: isDarkMode ? Colors.white : Colors.black,
+                                size: 45,
                               ),
                               onPressed: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       localizations.googleSignInComingSoon ?? 'Google Sign-In coming soon',
-                                      style: const TextStyle(color: Colors.white), // SnackBar text color
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                     backgroundColor: mainBlue,
                                   ),
                                 );
                               },
                             ),
-                            // --- Apple Sign-In ---
                             IconButton(
-                              iconSize: 40, // Match IconButton size
+                              iconSize: 40,
                               icon: Icon(
-                                Icons.apple, // Standard Apple icon from Flutter
-                                color: isDarkMode ? Colors.white : Colors.black, // Theme-based color
-                                size: 40, // Match icon size
+                                Icons.apple,
+                                color: isDarkMode ? Colors.white : Colors.black,
+                                size: 40,
                               ),
                               onPressed: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       localizations.appleSignInComingSoon ?? 'Apple Sign-In coming soon',
-                                      style: const TextStyle(color: Colors.white), // SnackBar text color
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                     backgroundColor: mainBlue,
                                   ),
                                 );
                               },
                             ),
-                            // --- Facebook Sign-In ---
                             IconButton(
-                              iconSize: 40, // Match IconButton size
+                              iconSize: 40,
                               icon: Icon(
-                                Icons.facebook, // Standard Facebook icon from Flutter
-                                color: isDarkMode ? Colors.white : Colors.black, // Theme-based color
-                                size: 40, // Match icon size
+                                Icons.facebook,
+                                color: isDarkMode ? Colors.white : Colors.black,
+                                size: 40,
                               ),
                               onPressed: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       localizations.facebookSignInComingSoon ?? 'Facebook Sign-In coming soon',
-                                      style: const TextStyle(color: Colors.white), // SnackBar text color
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                     backgroundColor: mainBlue,
                                   ),
@@ -389,7 +371,6 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
                             ),
                           ],
                         ),
-                        // --- END OF NEW ---
                         const SizedBox(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -405,7 +386,7 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
                             TextButton(
                               onPressed: () {
                                 Navigator.pushNamed(
-                                  context, BarberRegisterScreen.routeName);
+                                    context, BarberRegisterScreen.routeName);
                               },
                               child: Text(
                                 localizations.register ?? 'Register',

@@ -18,7 +18,7 @@ import '../barber_settings_screen.dart' hide mainBlue;
 // --- ADD: Import the Schedule, new Revenue screen, and Professionals screen ---
 import '../barber_schedule_screen.dart';
 import '../barber_revenue_report_screen.dart'; // <-- IMPORT THE NEW REVENUE SCREEN
-import '../barber_my_barbers_screen.dart' hide mainBlue; // <-- IMPORT THE NEW PROFESSIONALS SCREEN
+// <-- IMPORT THE NEW PROFESSIONALS SCREEN
 import 'barber_main_navigation.dart' hide mainBlue;
 
 class BarberMainDrawer extends StatelessWidget {

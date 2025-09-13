@@ -12,7 +12,6 @@ import 'barber_my_services_screen.dart' hide mainBlue;
 import 'barber_schedule_screen.dart' hide mainBlue;
 import 'barber_notifications_screen.dart' hide mainBlue;
 import 'main_screens/pending_bookings_screen.dart';
-import 'barber_detailed_analytics_screen.dart';
 import 'barber_revenue_report_screen.dart'; // Added import
 
 class LocalizedLiveClock extends StatefulWidget {

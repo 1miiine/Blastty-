@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:intl/intl.dart';
 
 // These imports are assumed to be correct for your project structure.
 // If they are not, please adjust them to point to your actual files.

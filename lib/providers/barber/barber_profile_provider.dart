@@ -148,7 +148,7 @@ class BarberProfileProvider extends ChangeNotifier {
       // Then, you would update the profile with the new image URL.
       // For demonstration, we'll just use a placeholder network image URL.
       // In reality, you'd use the URL returned by your upload process.
-      final String newProfileImageUrl = "https://example.com/uploaded_avatar.jpg"; // Mock URL
+      const String newProfileImageUrl = "https://example.com/uploaded_avatar.jpg"; // Mock URL
 
       if (_currentBarber != null) {
         // Create an updated Barber object with the new profile image

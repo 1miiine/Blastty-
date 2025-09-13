@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:share_plus/share_plus.dart';
 import '../models/barber_model.dart';
 import '../l10n/app_localizations.dart';
 import 'barber_details_screen.dart';
@@ -194,16 +193,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -244,16 +241,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -1814,7 +1809,6 @@ class _MultiServiceSelectionSheet extends StatefulWidget {
   final OnBookAction onBookAction;
 
   const _MultiServiceSelectionSheet({
-    super.key,
     required this.services,
     required this.title,
     required this.onBookAction,

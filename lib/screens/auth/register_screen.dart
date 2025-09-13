@@ -5,7 +5,7 @@ import 'package:material_symbols_icons/symbols.dart'; // <-- Import Material Sym
 // import '../../services/auth_service.dart'; // Import your actual auth service when ready
 import '../../widgets/language_switcher_button.dart'; // <-- Import Language Switcher Button
 import '../../l10n/app_localizations.dart'; // <-- IMPORT LOCALIZATION
-import 'role_selection_screen.dart'; // <-- Import RoleSelectionScreen for navigation
+// <-- Import RoleSelectionScreen for navigation
 
 /// A modern, square, and refined popup dialog for Terms and Conditions.
 class TermsAndConditionsDialog extends StatelessWidget {

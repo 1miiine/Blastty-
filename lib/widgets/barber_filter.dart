@@ -122,7 +122,7 @@ class BarberFilter extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              side: BorderSide(
+              side: const BorderSide(
                 color: mainBlue, // Border for the gender chip
               ),
             ),
@@ -169,7 +169,7 @@ class BarberFilter extends StatelessWidget {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

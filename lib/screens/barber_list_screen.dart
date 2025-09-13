@@ -570,16 +570,14 @@ class _BarberListScreenState extends State<BarberListScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -620,16 +618,14 @@ class _BarberListScreenState extends State<BarberListScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ),
-                                        dialogBackgroundColor: const Color(0xFF303030),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ),
-                                        dialogBackgroundColor: Colors.white,
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -1579,7 +1575,7 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                                '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)}',
+                                NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
                                 style: const TextStyle(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 4),
                             Text('${service.duration.inMinutes} ${loc.mins}',

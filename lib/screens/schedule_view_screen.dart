@@ -199,14 +199,14 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF303030)),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );
@@ -247,14 +247,14 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
                                           onPrimary: Colors.white,
                                           onSurface: Colors.white,
                                           surface: Color(0xFF303030),
-                                        ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF303030)),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                                       )
                                     : ThemeData.light().copyWith(
                                         colorScheme: const ColorScheme.light(
                                           primary: mainBlue,
                                           onPrimary: Colors.white,
                                           onSurface: Colors.black87,
-                                        ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
+                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
                                       ),
                                 child: child!,
                               );

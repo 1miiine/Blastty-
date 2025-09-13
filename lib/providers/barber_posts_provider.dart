@@ -111,7 +111,7 @@ class BarberPostsProvider extends ChangeNotifier {
           const SnackBar(
             content: Text("Could not share post."),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
       }

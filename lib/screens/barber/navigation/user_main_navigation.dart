@@ -87,7 +87,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> wit
 
     // --- MOVE: Initialize screens inside build ---
     // This ensures they are created with the current context, reflecting theme changes.
-    final List<Widget> _screens = [
+    final List<Widget> screens = [
       const HomeScreen(), // These should ideally also be Consumer aware if they need direct access
       const BarbersScreen(),
       const BookingsManagementScreen(snackbarMessage: '',),
@@ -109,7 +109,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> wit
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,
-        children: _screens, // Use the locally built list
+        children: screens, // Use the locally built list
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,

@@ -671,7 +671,7 @@ class BarberProfileScreen extends StatelessWidget {
                   color: mainBlue.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Symbols.switch_account_rounded, color: mainBlue, size: 36),
+                child: const Icon(Symbols.switch_account_rounded, color: mainBlue, size: 36),
               ),
               const SizedBox(height: 20),
               Text(

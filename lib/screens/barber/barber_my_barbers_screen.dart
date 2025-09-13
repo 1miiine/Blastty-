@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:intl/intl.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../theme/colors.dart';
 const Color mainBlue = Color(0xFF3434C6);
 const Color successGreen = Color(0xFF4CAF50);
 const Color warningOrange = Color(0xFFFF9800);

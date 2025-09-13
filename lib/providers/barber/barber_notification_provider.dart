@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide Notification;
 import '../../models/notification_model.dart';
-import '../../l10n/app_localizations.dart'; // Import for localization
+// Import for localization
 
 const Color mainBlue = Color(0xFF3434C6);
 
