@@ -1,0 +1,123 @@
+name: barber_app_demo
+description: A new Flutter project for barbershop booking
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  dotted_border: ^3.1.0
+  fl_chart: ^1.0.0
+  percent_indicator: ^4.2.2
+  cupertino_icons: ^1.0.6
+  share_plus: ^11.1.0
+  shared_preferences: ^2.2.2
+  intl: ^0.20.2
+  table_calendar: ^3.0.9
+  font_awesome_flutter: ^10.4.0
+  google_fonts: ^6.2.0
+  flutter_rating_bar: ^4.0.0
+  provider: ^6.1.1
+  material_symbols_icons: ^4.2858.1
+  image_picker: ^0.8.7+4
+  url_launcher: ^6.2.5
+  timeago: ^3.2.0
+  material_design_icons_flutter: ^7.0.7296
+  tabler_icons: ^2.5.0+1
+  feather_icons: ^1.2.0
+  flutter_svg: ^2.2.0
+  animations: ^2.0.11
+  syncfusion_flutter_gauges: ^30.2.6
+  syncfusion_flutter_charts: ^30.2.5
+  flip_card: ^0.7.0
+  geolocator: ^14.0.2
+  permission_handler: ^12.0.1
+  photo_view: ^0.15.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  generate: true
+  
+  # Localization configuration
+  assets:
+    - assets/images/categories/men_washing_hair.jpg
+    - assets/images/categories/men_hair_treatment.jpg
+    - assets/images/categories/men_hair_styling.jpg
+    - assets/images/categories/men_facial_treatment.jpg
+    - assets/images/categories/men_haircut_beard.jpg
+    - assets/images/categories/men_manicure.jpg
+    - assets/images/categories/men_kids_haircut.jpg
+    - assets/images/categories/men_haircut.jpg
+    - assets/images/categories/men_dreadlocks.jpg
+    - assets/images/categories/men_pedicure.jpg
+    - assets/images/categories/men_lineup.jpg
+    - assets/images/categories/men_coloring.jpg
+    - assets/images/categories/men_skin_care.jpg
+    - assets/images/categories/men_massage.jpg
+    - assets/images/categories/men_body_waxing.jpg
+    - assets/images/categories/women_braiding.jpg
+    - assets/images/categories/women_pedicure.jpg
+    - assets/images/categories/women_body_waxing.jpg
+    - assets/images/categories/women_eyebrows_lashes.jpg
+    - assets/images/categories/women_bridal_styling.jpg
+    - assets/images/categories/women_hair_coloring.jpg
+    - assets/images/categories/women_hair_styling.jpg
+    - assets/images/categories/women_braiding.jpg
+    - assets/images/categories/women_nails.jpg
+    - assets/images/categories/women_tanning.jpg
+    - assets/images/categories/women_massage.jpg
+    - assets/images/categories/women_manicure.jpg
+    - assets/images/categories/women_makeup.jpg
+    - assets/images/categories/women_lineup.jpg
+    - assets/images/categories/women_laser_hair_removal.jpg
+    - assets/images/categories/women_kids_haircut.jpg
+    - assets/images/categories/women_hair_treatment.jpg
+    - assets/images/categories/women_washing_hair.jpg
+    - assets/images/categories/women_facial_treatment.jpg
+    - assets/images/categories/women_body_treatments.jpg
+    - assets/images/categories/women_henna_art.jpg
+    - assets/images/categories/women_hammam.jpg
+    - assets/images/categories/women_microblading.jpg
+    - assets/images/categories/women_haircut.jpg
+    - assets/svg/barber.svg
+    - assets/svg/client.svg
+    - assets/svg/MYbarbers.svg
+
+
+    - assets/images/
+    - assets/images/home_banner.jpg
+    - assets/images/omar.jpg
+    - assets/images/Ayman.jpg
+    - assets/images/rashid.jpg
+    - assets/images/morad.jpg
+    - assets/images/khalid.jpg
+    - assets/images/amine.jpg
+    - assets/images/barbershop1.png
+    - assets/images/barber1.jpg
+    - assets/images/barber2.jpg
+    - assets/images/barber3.jpg
+    - assets/images/barber4.jpg
+    - assets/images/flag_usa.png
+    - assets/images/flag_france.png
+    - assets/images/flag_morocco.png
+
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
