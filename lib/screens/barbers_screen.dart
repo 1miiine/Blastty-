@@ -1,12 +1,13 @@
 // lib/screens/barbers_screen.dart
+import 'dart:async';
+import 'package:barber_app_demo/screens/schedule_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'barber_details_screen.dart';
+// Import the updated ServiceSelectionSheet widget (single "Book" button)
 import '../models/barber_model.dart';
-import '../models/service.dart';
 import '../l10n/app_localizations.dart';
-import 'schedule_view_screen.dart';
-import 'bookings_management_screen.dart'; 
+import 'barber_details_screen.dart';
+import '../models/service.dart';
 
 const Color mainBlue = Color(0xFF3434C6);
 
@@ -25,7 +26,7 @@ class _BarbersScreenState extends State<BarbersScreen> {
   String selectedGender = 'men'; // Default to 'men', can be 'women'
   // --- END OF NEW ---
 
-  // --- MODIFIED: Single source of truth for selected services ---
+  // --- MODIFIED: Single source of truth for selected services PER CARD ---
   // Stores the selected services for each barber by their ID.
   final Map<String, List<Service>> _cardSelectedServices = {};
 
@@ -57,7 +58,7 @@ class _BarbersScreenState extends State<BarbersScreen> {
       lastDate: DateTime(now.year + 2),
       builder: (context, child) {
         return Theme(
-          data: isDark
+           data: isDark
               ? ThemeData.dark().copyWith(
                   colorScheme: ColorScheme.dark(
                     primary: mainBlue,
@@ -105,87 +106,41 @@ class _BarbersScreenState extends State<BarbersScreen> {
     });
   }
 
-  // --- MODIFIED: Helper to get selected services for a specific barber ---
+  // --- MODIFIED: Helper to GET selected services for a specific barber CARD ---
   List<Service> _getSelectedServicesForBarber(Barber barber) {
+    // Use putIfAbsent to ensure a list exists for the barber ID, even if empty
     return _cardSelectedServices.putIfAbsent(barber.id ?? '', () => []);
   }
 
-  // --- NEW: Implement the provided logic for selecting a service ---
+  // --- NEW: Implement the logic for SELECTING a service on a specific barber CARD ---
   void _selectServiceForBarber(Barber barber, Service service) {
     setState(() {
       final barberId = barber.id ?? '';
-      // Toggle the selection for this barber
+      // Get the current list of selected services for this barber
       final current = _cardSelectedServices[barberId] ?? [];
+      // Toggle the selection for this specific service
       if (current.contains(service)) {
         current.remove(service);
       } else {
         current.add(service);
       }
+      // Update the map with the modified list for this barber
       _cardSelectedServices[barberId] = current;
-      // CLEAR ALL OTHER BARBERS UNCONDITIONALLY
+
+      // --- ENFORCE CONSTRAINT: CLEAR ALL OTHER BARBERS' SELECTIONS UNCONDITIONALLY ---
       _cardSelectedServices.forEach((id, services) {
         if (id != barberId) {
-          _cardSelectedServices[id] = [];
+          _cardSelectedServices[id] = []; // Clear services for other barbers
         }
       });
+      // --- END CONSTRAINT ---
     });
   }
 
-  // --- MODIFIED: _handleBookNow to incorporate card-level selection and stricter constraint ---
-  Future<void> _handleBookNow(BuildContext context, Barber barber) async {
-    final loc = AppLocalizations.of(context)!;
-    final List<Service> selectedServices = _getSelectedServicesForBarber(barber);
-    if (selectedServices.isEmpty) {
-      // If no services are selected on the card, show the selection sheet
-      final List<Service>? selectedServicesFromSheet = await showModalBottomSheet<List<Service>?>(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (BuildContext context) {
-          return _MultiSelectServiceSheet(
-            services: barber.services,
-            title: '${loc.bookNow} - ${barber.name}',
-            initialSelectedServices: _getSelectedServicesForBarber(barber),
-            onSelectionUpdate: (updatedSelection) {
-              // --- IMPLEMENT THE PROVIDED SHEET LOGIC ---
-              setState(() {
-                final barberId = barber.id ?? '';
-                _cardSelectedServices[barberId] = updatedSelection;
-                // CLEAR ALL OTHER BARBERS UNCONDITIONALLY
-                _cardSelectedServices.forEach((id, services) {
-                  if (id != barberId) _cardSelectedServices[id] = [];
-                });
-              });
-              // --- END PROVIDED SHEET LOGIC ---
-            },
-          );
-        },
-      );
-      if (selectedServicesFromSheet != null && selectedServicesFromSheet.isNotEmpty && context.mounted) {
-        // Proceed with booking using services from sheet
-        _showBookingConfirmationDialog(context, barber, selectedServicesFromSheet, loc, isBookingNow: true);
-      } else if (selectedServicesFromSheet != null && selectedServicesFromSheet.isEmpty && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(loc.selectAtLeastOneService ?? 'Please select at least one service.'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } else {
-      // If services are selected on the card, proceed directly
-      _showBookingConfirmationDialog(context, barber, selectedServices, loc, isBookingNow: true);
-    }
-  }
 
-  // --- MODIFIED: _handleBookLater to incorporate card-level selection and stricter constraint ---
-  Future<void> _handleBookLater(BuildContext context, Barber barber) async {
+  // --- UPDATED METHOD: Handle Book with Single Service Selection and Direct Navigation ---
+  Future<void> _handleBook(BuildContext context, Barber barber) async {
     final loc = AppLocalizations.of(context)!;
-    final List<Service> selectedServices = _getSelectedServicesForBarber(barber);
     if (barber.services.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -199,273 +154,45 @@ class _BarbersScreenState extends State<BarbersScreen> {
       }
       return;
     }
-    if (selectedServices.isEmpty) {
-      // If no services are selected on the card, show the selection sheet
-      final List<Service>? selectedServicesFromSheet = await showModalBottomSheet<List<Service>?>(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (BuildContext context) {
-          return _MultiSelectServiceSheet(
-            services: barber.services,
-            title: '${loc.bookLater} - ${barber.name}',
-            initialSelectedServices: _getSelectedServicesForBarber(barber),
-            onSelectionUpdate: (updatedSelection) {
-               // --- IMPLEMENT THE PROVIDED SHEET LOGIC ---
-              setState(() {
-                final barberId = barber.id ?? '';
-                _cardSelectedServices[barberId] = updatedSelection;
-                // CLEAR ALL OTHER BARBERS UNCONDITIONALLY
-                _cardSelectedServices.forEach((id, services) {
-                  if (id != barberId) _cardSelectedServices[id] = [];
-                });
-              });
-            },
-          );
-        },
-      );
-      if (selectedServicesFromSheet != null && selectedServicesFromSheet.isNotEmpty && context.mounted) {
-        // Proceed with showing confirmation dialog using services from sheet
-        _showBookingConfirmationDialog(context, barber, selectedServicesFromSheet, loc, isBookingNow: false);
-      } else if (selectedServicesFromSheet != null && selectedServicesFromSheet.isEmpty && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(loc.selectAtLeastOneService ?? 'Please select at least one service.'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } else {
-      // If services are selected on the card, proceed directly to confirmation dialog
-      _showBookingConfirmationDialog(context, barber, selectedServices, loc, isBookingNow: false);
+
+    // Get the services currently selected on THIS barber's card
+    final List<Service> currentSelectedServices = _getSelectedServicesForBarber(barber);
+
+    if (currentSelectedServices.isEmpty) {
+        // This case should ideally not happen if the button is only visible when services are selected,
+        // but as a safeguard, show a snackbar.
+         if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(loc.selectAtLeastOneService ??
+                    'Please select at least one service.'),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        return;
     }
+
+    // --- SCENARIOS 1 & 3: Navigate directly to BarberDetailsScreen ---
+    // Pass the selected services and a flag to indicate navigation to schedule
+    print('### Barber Card: Book button clicked (services selected on card). Navigating to Schedule tab with pre-selected services.');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BarberDetailsScreen(
+          barber: barber,
+          // --- PASS INITIAL SELECTED SERVICES ---
+          initialSelectedServices: currentSelectedServices,
+          // --- INDICATE NAVIGATION TO SCHEDULE TAB ---
+          navigateToSchedule: true,
+        ),
+      ),
+    );
+    // --- END SCENARIOS 1 & 3 ---
   }
 
-  // --- MODIFIED: _showBookingConfirmationDialog with overflow fix ---
-  void _showBookingConfirmationDialog(BuildContext context, Barber barber, List<Service> selectedServices, AppLocalizations loc, {required bool isBookingNow}) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color dialogBgColor = isDarkMode ? Colors.grey[850]! : Colors.white;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
-    DateTime? selectedDate;
-    TimeOfDay? selectedTime;
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: dialogBgColor,
-              // Increased content padding to prevent overflow
-              contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-              title: Text(isBookingNow ? '${loc.bookNow} - ${barber.name}' : '${loc.bookLater} - ${barber.name}',
-                          style: TextStyle(color: textColor)),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${loc.withText} ${barber.name}',
-                        style: TextStyle(fontStyle: FontStyle.italic, color: subtitleColor)),
-                    const SizedBox(height: 20),
-                    if (!isBookingNow) ...[
-                      Text(loc.selectDateTime ?? 'Select Date & Time:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(DateTime.now().year + 1),
-                            builder: (context, child) {
-                              return Theme(
-                                 data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() {
-                              selectedDate = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_month, color: Colors.white),
-                        label: Text(
-                          selectedDate == null
-                              ? (loc.selectDate ?? 'Select Date')
-                              : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                            builder: (context, child) {
-                              return Theme(
-                                 data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() {
-                              selectedTime = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.access_time, color: Colors.white),
-                        label: Text(
-                          selectedTime == null
-                              ? (loc.selectTime ?? 'Select Time')
-                              : selectedTime!.format(context),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    Text(loc.selectedServices, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    // Wrap service items in a scrollable container to prevent overflow
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.3, // Limit height
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: selectedServices.map((service) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // Use Expanded to prevent text overflow
-                                  Expanded(
-                                    child: Text(service.name,
-                                                style: TextStyle(color: textColor),
-                                                overflow: TextOverflow.ellipsis), // Handle long names
-                                  ),
-                                  const SizedBox(width: 8), // Add spacing
-                                  Text(
-                                    '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)} - ${service.duration.inMinutes} ${loc.mins}',
-                                    style: TextStyle(color: subtitleColor, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(
-                          '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(selectedServices.fold<double>(0, (sum, item) => sum + item.price))} - ${selectedServices.fold<int>(0, (sum, item) => sum + item.duration.inMinutes)} ${loc.mins}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: mainBlue),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(loc.cancel ?? 'Cancel', style: TextStyle(color: isDarkMode ? Colors.white70 : mainBlue)),
-                ),
-                ElevatedButton(
-                  onPressed: (!isBookingNow && selectedDate != null && selectedTime != null) || isBookingNow
-                      ? () {
-                          Navigator.pop(context);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  loc.bookingSent ?? 'Your booking request was sent. You will receive a confirmation soon.',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                backgroundColor: mainBlue,
-                                duration: const Duration(seconds: 3),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            // Navigate to bookings management screen with correct route
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BookingsManagementScreen(snackbarMessage: '',),
-                              ),
-                            );
-                          }
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: mainBlue, foregroundColor: Colors.white),
-                  child: Text(isBookingNow ? loc.bookNow : loc.bookLater),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   Widget buildSearchBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -772,15 +499,20 @@ class _BarbersScreenState extends State<BarbersScreen> {
                     padding: const EdgeInsets.only(bottom: 16),
                     child: _EnhancedBarberCard(
                       barber: barber,
+                      // --- PASS THE SELECTED SERVICES FOR THIS SPECIFIC BARBER CARD ---
                       selectedServices: _getSelectedServicesForBarber(barber),
                       // --- USE THE NEW LOGIC FOR CARD SERVICE TOGGLE ---
                       onServiceToggle: (service) => _selectServiceForBarber(barber, service),
                       // --- END USE NEW LOGIC ---
-                      onBookNow: () => _handleBookNow(context, barber),
-                      onBookLater: () => _handleBookLater(context, barber),
-                      // Pass the function to show sheet when card is tapped
+                      // --- UPDATED: Single callback for the unified Book action ---
+                      // Only pass the book handler, logic is internal now
+                      onBook: () => _handleBook(context, barber),
+                      // --- END UPDATED ---
+                      // Pass the function to show sheet when card is tapped (outside Book button)
                       onCardTap: () async {
-                        // Always show the sheet when card is tapped (except image/name)
+                        // --- SCENARIOS 2 & 3: Card Tap (anywhere) ---
+                        // Always show the service selection sheet.
+                        print('### Barber Card: Card tapped (outside Book button). Showing service selection sheet.');
                         final List<Service>? selectedServicesFromSheet = await showModalBottomSheet<List<Service>?>(
                           context: context,
                           isScrollControlled: true,
@@ -788,40 +520,46 @@ class _BarbersScreenState extends State<BarbersScreen> {
                             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                           ),
                           builder: (BuildContext context) {
-                            return _MultiSelectServiceSheet(
+                            // --- CHANGED: Use _SingleBookServiceSheet ---
+                            return _SingleBookServiceSheet(
                               services: barber.services,
                               title: '${AppLocalizations.of(context)!.selectServices} - ${barber.name}',
-                              initialSelectedServices: _getSelectedServicesForBarber(barber),
-                              onSelectionUpdate: (updatedSelection) {
-                                // --- IMPLEMENT THE PROVIDED SHEET LOGIC ---
-                                setState(() {
-                                  final barberId = barber.id ?? '';
-                                  _cardSelectedServices[barberId] = updatedSelection;
-                                  // CLEAR ALL OTHER BARBERS UNCONDITIONALLY
-                                  _cardSelectedServices.forEach((id, services) {
-                                    if (id != barberId) _cardSelectedServices[id] = [];
-                                  });
-                                });
-                                // --- END PROVIDED SHEET LOGIC ---
-                              },
+                              // initialSelectedServices defaults to empty list
                             );
                           },
                         );
-                        // Optionally update card selection if services were selected
-                        // Note: This update is now primarily handled by onSelectionUpdate in the sheet
-                        // This is a fallback if the sheet doesn't call onSelectionUpdate on confirm
-                        if (selectedServicesFromSheet != null && selectedServicesFromSheet.isNotEmpty) {
-                           // The constraint should already be applied via onSelectionUpdate
-                           // This setState is just to ensure the UI reflects the final state from the sheet
-                           setState(() {
-                             _cardSelectedServices[barber.id ?? ''] = selectedServicesFromSheet;
-                             // Apply the same unconditional clear logic here as well for consistency
-                             final barberId = barber.id ?? '';
-                             _cardSelectedServices.forEach((id, services) {
-                               if (id != barberId) _cardSelectedServices[id] = [];
-                             });
-                           });
+
+                        // Handle the result from the sheet (card tap)
+                        if (selectedServicesFromSheet != null && selectedServicesFromSheet.isNotEmpty && context.mounted) {
+                            // --- SCENARIOS 2 & 3 (Success) ---
+                            // Navigate to BarberDetailsScreen's Schedule tab (index 2) with selected services.
+                            print('### Barber Card: Services selected from sheet. Navigating to Schedule tab.');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BarberDetailsScreen(
+                                  barber: barber,
+                                  // --- PASS INITIAL SELECTED SERVICES ---
+                                  initialSelectedServices: selectedServicesFromSheet,
+                                  // --- INDICATE NAVIGATION TO SCHEDULE TAB ---
+                                  navigateToSchedule: true,
+                                ),
+                              ),
+                            );
+                        } else if (selectedServicesFromSheet != null && selectedServicesFromSheet.isEmpty && context.mounted) {
+                          // User pressed Book without selecting services from card tap sheet
+                          print('### Barber Card: Book pressed in sheet without selecting services.');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context)!.selectAtLeastOneService ??
+                                  'Please select at least one service.'),
+                              backgroundColor: Colors.orange,
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
                         }
+                        // If selectedServicesFromSheet is null, the user cancelled the sheet, so do nothing.
                       },
                     ),
                   );
@@ -835,21 +573,19 @@ class _BarbersScreenState extends State<BarbersScreen> {
   }
 }
 
-// --- MODIFIED: Enhanced Barber Card Widget ---
+// --- UPDATED: Enhanced Barber Card Widget with Conditional Book Button ---
 class _EnhancedBarberCard extends StatelessWidget {
   final Barber barber;
-  final List<Service> selectedServices;
-  final Function(Service) onServiceToggle;
-  final VoidCallback onBookNow;
-  final VoidCallback onBookLater;
-  final VoidCallback onCardTap; // New callback for card tap
+  final List<Service> selectedServices; // List of selected services for this card
+  final Function(Service) onServiceToggle; // Callback when a service is toggled
+  final VoidCallback onBook; // Callback when the Book button is pressed
+  final VoidCallback onCardTap; // Callback when the card (outside Book button) is tapped
 
   const _EnhancedBarberCard({
     required this.barber,
     required this.selectedServices,
     required this.onServiceToggle,
-    required this.onBookNow,
-    required this.onBookLater,
+    required this.onBook,
     required this.onCardTap,
   });
 
@@ -862,7 +598,7 @@ class _EnhancedBarberCard extends StatelessWidget {
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
     final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
     return GestureDetector(
-      // Add tap handler for the entire card
+      // Add tap handler for the entire card (outside the Book button)
       onTap: onCardTap,
       child: Container(
         padding: const EdgeInsets.all(16.0),
@@ -956,7 +692,7 @@ class _EnhancedBarberCard extends StatelessWidget {
                   final bool isSelected = selectedServices.contains(service);
                   return GestureDetector(
                     onTap: () {
-                      onServiceToggle(service);
+                      onServiceToggle(service); // Toggle service selection
                     },
                     child: Container(
                       width: 145, // Slightly reduced width
@@ -1022,75 +758,62 @@ class _EnhancedBarberCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                SizedBox(
-                  width: 130, // Slightly reduced button width
-                  child: ElevatedButton(
-                    onPressed: onBookNow,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: mainBlue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 10), // Reduced padding
-                    ),
-                    child: Text(loc.bookNow ?? 'Book Now',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)), // Smaller font
+            // --- MODIFIED: Conditionally render the Book button ---
+            // Only show the Book button if at least one service is selected on this card
+            if (selectedServices.isNotEmpty) ...[
+              SizedBox(
+                width: double.infinity, // Full width button
+                child: ElevatedButton(
+                  onPressed: onBook, // Use the provided onBook callback
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mainBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12), // Adjusted padding
+                  ),
+                  child: Text(
+                    loc.book ?? 'Book', // Use 'Book' label
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600), // Smaller font
                   ),
                 ),
-                SizedBox(
-                  width: 130,
-                  child: OutlinedButton(
-                    onPressed: onBookLater,
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: mainBlue, width: 2.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 10), // Reduced padding
-                    ),
-                    child: Text(loc.bookLater ?? 'Book Later',
-                        style: const TextStyle(
-                            fontSize: 13, // Smaller font
-                            fontWeight: FontWeight.w600,
-                            color: mainBlue)),
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 10), // Add some space below the button
+            ],
+            // --- END MODIFIED ---
           ],
         ),
       ),
     );
   }
 }
-// --- END MODIFIED: Enhanced Barber Card Widget ---
+// --- END UPDATED: Enhanced Barber Card Widget ---
 
-// --- MODIFIED: _MultiSelectServiceSheet with Checkboxes and constraint handling ---
-class _MultiSelectServiceSheet extends StatefulWidget {
+// --- NEW: _SingleBookServiceSheet with only one Book button ---
+class _SingleBookServiceSheet extends StatefulWidget {
   final List<Service> services;
   final String title;
-  final List<Service> initialSelectedServices;
-  final Function(List<Service>) onSelectionUpdate; // Callback for real-time updates
+  // Removed initialSelectedServices and onSelectionUpdate for simplicity in this version
+  // They can be added back if needed for pre-selection or real-time updates
 
-  const _MultiSelectServiceSheet({
+  const _SingleBookServiceSheet({
     required this.services,
     required this.title,
-    required this.initialSelectedServices,
-    required this.onSelectionUpdate,
+    // Removed initialSelectedServices and onSelectionUpdate
   });
 
   @override
-  State<_MultiSelectServiceSheet> createState() => _MultiSelectServiceSheetState();
+  State<_SingleBookServiceSheet> createState() => _SingleBookServiceSheetState();
 }
 
-class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
+class _SingleBookServiceSheetState extends State<_SingleBookServiceSheet> {
+  // Use a local Set to manage selections within the sheet
   late Set<Service> _selectedServices;
 
   @override
   void initState() {
     super.initState();
-    // Initialize with the services passed from the card state
-    _selectedServices = Set<Service>.from(widget.initialSelectedServices);
+    // Initialize with an empty set of selected services
+    _selectedServices = <Service>{};
   }
 
   void _toggleService(Service service) {
@@ -1100,8 +823,7 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
       } else {
         _selectedServices.add(service);
       }
-      // Notify the parent screen of the change to apply constraints
-      widget.onSelectionUpdate(_selectedServices.toList());
+      // No need to call onSelectionUpdate for the single-button flow
     });
   }
 
@@ -1115,21 +837,30 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
     final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
     return Container(
       padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 16),
-      height: MediaQuery.of(context).size.height * 0.6,
+      // Removed fixed height to allow content to dictate size, but kept minimum constraint
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8, // Prevents sheet from being too tall
+        minHeight: MediaQuery.of(context).size.height * 0.4,  // Ensures a minimum height
+      ),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: isDarkMode ? const Color(0xFF1E1E1E) : cardBg, // Slightly different bg for root container in dark mode
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, // Adjust size to content
         children: [
           Text(widget.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: mainBlue)),
           const SizedBox(height: 16),
-          Text(loc.selectService ?? 'Select one or more services to book',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
+          Text(
+            loc.selectService ?? 'Select one or more services to book',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
+          ),
           const SizedBox(height: 12),
-          Expanded(
+          // Use Flexible for dynamic height within constraints
+          Flexible( // Allows the list to grow/shrink within constraints
             child: ListView.builder(
+              shrinkWrap: true, // Important for ListView inside a Column with mainAxisSize.min
               itemCount: widget.services.length,
               itemBuilder: (context, index) {
                 final service = widget.services[index];
@@ -1162,35 +893,39 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
                         Expanded(
                           child: Row(
                             children: [
-                              // Checkbox remains in the sheet
+                              // --- Checkbox for multi-selection ---
                               Checkbox(
                                 value: isSelected,
                                 onChanged: (bool? value) {
-                                  if (value == true) {
-                                    _toggleService(service);
-                                  } else if (value == false) {
+                                  if (value != null) {
                                     _toggleService(service);
                                   }
                                 },
-                                activeColor: mainBlue,
+                                activeColor: mainBlue, // Blue checkbox when selected
                                 checkColor: Colors.white,
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Smaller touch target
+                                visualDensity: const VisualDensity(horizontal: -4, vertical: -4), // Compact size
                               ),
+                              // --- END Checkbox ---
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(service.name,
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                            color: textColor)),
+                                    Text(
+                                      service.name,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        color: textColor,
+                                      ),
+                                    ),
                                     if (service.description != null &&
                                         service.description!.isNotEmpty)
-                                      Text(service.description!,
-                                          style: TextStyle(fontSize: 14, color: subtitleColor)),
+                                      Text(
+                                        service.description!,
+                                        style: TextStyle(fontSize: 14, color: subtitleColor),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -1216,40 +951,41 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: mainBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: const BorderSide(color: mainBlue),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          // --- Single "Book" Button ---
+          SizedBox(
+            width: double.infinity, // Full width button
+            child: ElevatedButton(
+              onPressed: _selectedServices.isEmpty
+                  ? null // Disable if nothing is selected
+                  : () {
+                      // Pop the sheet and return the selected services
+                      Navigator.pop(context, _selectedServices.toList());
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: mainBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(loc.cancel ?? 'Cancel'),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), // Slightly larger padding
+              ).copyWith(
+                // --- Handle disabled state background color ---
+                backgroundColor: WidgetStateProperty.resolveWith<Color?>(
+                    (Set<WidgetState> states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return Colors.grey; // Grey background when disabled
+                  }
+                  return mainBlue; // Main blue otherwise
+                }),
               ),
-              ElevatedButton(
-                onPressed: _selectedServices.isEmpty
-                    ? null
-                    : () {
-                        // Pass the final selection back to the parent screen
-                        Navigator.pop(context, _selectedServices.toList());
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: mainBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Text(
+                loc.book ?? 'Book', // Use localized 'Book' string
+                style: const TextStyle(
+                  fontSize: 16, // Slightly larger font
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Text(loc.confirm ?? 'Confirm'),
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
         ],

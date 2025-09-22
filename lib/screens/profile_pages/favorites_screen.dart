@@ -4,6 +4,10 @@ import 'package:barber_app_demo/models/service.dart';
 import 'package:barber_app_demo/screens/service_list_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:barber_app_demo/l10n/app_localizations.dart';
+// --- NEW: Import BarberDetailsScreen to navigate to it ---
+import 'package:barber_app_demo/screens/barber_details_screen.dart'; // Adjust path if needed
+// --- NEW: Import Barber model if needed for finding the barber instance ---
+import 'package:barber_app_demo/models/barber_model.dart'; // Adjust path if needed
 // --- NEW: Import BookingsManagementScreen to access its routeName ---
 import 'package:barber_app_demo/screens/bookings_management_screen.dart'; // Adjust path if needed
 // --- END OF NEW ---
@@ -63,40 +67,39 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   ];
   // --- END OF MODIFIED ---
 
+  // --- IMPORTANT: Ensure 'id' in _favorites is a unique identifier matching Barber.id ---
   final List<Map<String, dynamic>> _favorites = List.generate(
     5,
     (index) => {
-      'id': index + 1,
+      // --- CHANGED: Use a string ID that matches Barber.id ---
+      'id': 'barber_$index', // Example ID format - MUST match Barber.id
       'nameKey': 'barberHaven${index + 1}',
       'city': 'Casablanca',
       'countryCode': 'MA',
       'rating': 4.2 + (index * 0.3),
-      'specialtyKey':
-          index.isEven ? 'specialty_premium_beard_care' : 'specialty_signature_haircut',
+      'specialtyKey': index.isEven ? 'specialty_premium_beard_care' : 'specialty_signature_haircut',
       'image': 'assets/images/omar.jpg',
       'isFavorite': true,
       'distance': '${(index + 1) * 0.5} km',
       'tag': index % 3 == 0 ? 'Popular' : (index % 3 == 1 ? 'New' : ''),
       'descriptionKey': 'desc_barber_haven_${index + 1}',
-      // --- MODIFIED: Service data to include type for navigation ---
       'services': [
         {
           'nameKey': 'service_haircut',
           'icon': Icons.content_cut,
-          'type': 'Haircut' // Add type for navigation
+          'type': 'Haircut'
         },
         {
           'nameKey': 'service_beard_trim',
           'icon': Icons.face,
-          'type': 'Beard Trim' // Add type for navigation
+          'type': 'Beard Trim'
         },
         {
           'nameKey': 'service_hot_towel_shave',
           'icon': Icons.spa,
-          'type': 'Shave' // Add type for navigation
+          'type': 'Shave'
         },
       ],
-      // --- END OF MODIFIED ---
       'reviews': [
         {
           'user': 'Ahmed M.',
@@ -145,42 +148,22 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
   String _getLocalizedString(String key, AppLocalizations localizations) {
     switch (key) {
-      case 'barberHaven1':
-        return localizations.barberHaven1;
-      case 'barberHaven2':
-        return localizations.barberHaven2;
-      case 'barberHaven3':
-        return localizations.barberHaven3;
-      case 'barberHaven4':
-        return localizations.barberHaven4;
-      case 'barberHaven5':
-        return localizations.barberHaven5;
-
-      case 'specialty_premium_beard_care':
-        return localizations.specialtyPremiumBeardCare;
-      case 'specialty_signature_haircut':
-        return localizations.specialtySignatureHaircut;
-
-      case 'desc_barber_haven_1':
-        return localizations.descBarberHaven1;
-      case 'desc_barber_haven_2':
-        return localizations.descBarberHaven2;
-      case 'desc_barber_haven_3':
-        return localizations.descBarberHaven3;
-      case 'desc_barber_haven_4':
-        return localizations.descBarberHaven4;
-      case 'desc_barber_haven_5':
-        return localizations.descBarberHaven5;
-
-      case 'service_haircut':
-        return localizations.serviceHaircut;
-      case 'service_beard_trim':
-        return localizations.serviceBeardTrim;
-      case 'service_hot_towel_shave':
-        return localizations.serviceHotTowelShave;
-
-      default:
-        return key;
+      case 'barberHaven1': return localizations.barberHaven1;
+      case 'barberHaven2': return localizations.barberHaven2;
+      case 'barberHaven3': return localizations.barberHaven3;
+      case 'barberHaven4': return localizations.barberHaven4;
+      case 'barberHaven5': return localizations.barberHaven5;
+      case 'specialty_premium_beard_care': return localizations.specialtyPremiumBeardCare;
+      case 'specialty_signature_haircut': return localizations.specialtySignatureHaircut;
+      case 'desc_barber_haven_1': return localizations.descBarberHaven1;
+      case 'desc_barber_haven_2': return localizations.descBarberHaven2;
+      case 'desc_barber_haven_3': return localizations.descBarberHaven3;
+      case 'desc_barber_haven_4': return localizations.descBarberHaven4;
+      case 'desc_barber_haven_5': return localizations.descBarberHaven5;
+      case 'service_haircut': return localizations.serviceHaircut;
+      case 'service_beard_trim': return localizations.serviceBeardTrim;
+      case 'service_hot_towel_shave': return localizations.serviceHotTowelShave;
+      default: return key;
     }
   }
 
@@ -194,6 +177,98 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     );
   }
   // --- END OF NEW ---
+
+  // --- NEW: Helper to find Barber instance by ID ---
+  Barber? _findBarberById(String barberId) {
+    try {
+      // --- ADAPT THIS LOGIC TO YOUR DATA STRUCTURE ---
+      // Example: If you have a static list like Barber.simpleBarbers
+      // Iterate through the list and find the one with the matching ID
+      if (Barber.simpleBarbers != null) {
+        for (var barber in Barber.simpleBarbers) {
+          if (barber.id == barberId) {
+            print("SUCCESS: Found barber with ID '$barberId': ${barber.name}");
+            return barber;
+          }
+        }
+        print("WARNING: Barber with ID '$barberId' not found in Barber.simpleBarbers list.");
+      } else {
+        print("WARNING: Barber.simpleBarbers list is null or inaccessible.");
+      }
+
+      // Example 2: If you have a service to fetch by ID
+      // return fetchBarberById(barberId); // Your method to fetch by ID
+
+      print("ERROR: _findBarberById needs correct implementation for ID '$barberId'");
+      return null; // Indicate failure to find
+    } catch (e) {
+      print("Error finding barber by ID '$barberId': $e");
+      return null;
+    }
+  }
+  // --- END OF NEW ---
+
+
+  // --- MODIFIED: Navigate to BarberDetailsScreen's Schedule tab ---
+  void _navigateToScheduleAndBook(List<Service> selectedServices, Map<String, dynamic> barberData) {
+    final localizations = AppLocalizations.of(context)!;
+    print("### _navigateToScheduleAndBook called with ${selectedServices.length} services for barberData id: ${barberData['id']}");
+
+    // 1. Identify the correct Barber object using its ID
+    final String? barberId = barberData['id'] as String?; // Get ID from favorite data
+    if (barberId == null || barberId.isEmpty) {
+        print("### ERROR: Barber ID is null or empty in barberData. Cannot proceed.");
+        if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Barber information is incomplete.'), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
+            );
+        }
+        return;
+    }
+
+    final Barber? targetBarber = _findBarberById(barberId); // Find using the ID
+
+    if (targetBarber == null) {
+        // Handle the case where the barber couldn't be found
+        final String barberName = _getLocalizedString(barberData['nameKey'], localizations);
+        if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text('Could not find details for barber: $barberName.'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 2),
+                ),
+            );
+        }
+        print("### ERROR: Could not find Barber instance for ID '$barberId'. Navigation aborted.");
+        return; // --- ABORT NAVIGATION ---
+    }
+    print("### SUCCESS: Found Barber instance: ${targetBarber.name} (ID: ${targetBarber.id})");
+
+    // 2. Navigate to BarberDetailsScreen with pre-selected services and navigation flag
+    print("### Attempting to navigate to BarberDetailsScreen...");
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BarberDetailsScreen(
+          barber: targetBarber, // Pass the full Barber object
+          initialSelectedServices: selectedServices, // Pass selected services
+          navigateToSchedule: true, // Instruct to go to Schedule tab
+        ),
+      ),
+    ).then((_) {
+      print("### Returned from BarberDetailsScreen. Navigating to BookingsManagementScreen...");
+      // 3. After returning from BarberDetailsScreen, navigate to Bookings Management
+      if (context.mounted) {
+        Navigator.pushNamed(context, BookingsManagementScreen.routeName);
+      } else {
+        print("### Context not mounted, skipping final navigation to BookingsManagementScreen.");
+      }
+    });
+    print("### Navigator.push command issued for BarberDetailsScreen.");
+  }
+  // --- END OF MODIFIED ---
+
 
   void _showFavoriteDetails(Map<String, dynamic> item) {
     final localizations = AppLocalizations.of(context)!;
@@ -367,7 +442,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                           runSpacing: 8.0,
                           children: (item['services'] as List<Map<String, dynamic>>).map((service) {
                             return GestureDetector(
-                              onTap: () => _navigateToService(service['type']), // Add tap handler
+                              onTap: () => _navigateToService(service['type']),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
@@ -379,7 +454,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                   children: [
                                     Icon(service['icon'], color: Colors.white, size: 16),
                                     const SizedBox(width: 5),
-                                    // --- FIX: Wrap text to prevent overflow ---
                                     Flexible(
                                       child: Text(
                                         _getLocalizedString(service['nameKey'], localizations),
@@ -387,7 +461,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    // --- END FIX ---
                                   ],
                                 ),
                               ),
@@ -448,8 +521,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // Trigger the new booking flow
-                      _handleRebook(context, localizations, _getLocalizedString(item['nameKey'], localizations));
+                      // Trigger the new booking flow, passing barber data (including ID)
+                      _handleRebook(context, localizations, item);
                     },
                     icon: const Icon(Icons.calendar_today, color: Colors.white),
                     label: Text(localizations.rebook, style: const TextStyle(color: Colors.white)),
@@ -471,42 +544,30 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     );
   }
 
-  // --- NEW: Handle Rebook action with enhanced Service Selection Sheet ---
-  Future<void> _handleRebook(BuildContext context, AppLocalizations localizations, String barberName) async {
+  // --- MODIFIED: Handle Rebook action with single Rebook button ---
+  Future<void> _handleRebook(BuildContext context, AppLocalizations localizations, Map<String, dynamic> barberData) async {
+    print("### _handleRebook called for barber: ${barberData['id']}");
     // Show the DRAGGABLE service selection sheet
     final List<Service>? selectedServicesFromSheet = await showModalBottomSheet<List<Service>?>(
       context: context,
       isScrollControlled: true, // Essential for draggable sheet
       backgroundColor: Colors.transparent, // Make background transparent for custom styling
       builder: (BuildContext context) {
-        // Use a temporary set to manage selection within the sheet's scope
-        // In a full app, this state might be managed differently, e.g., via a Bloc or riverpod
-        final Set<Service> tempSelectedServices = <Service>{};
-
         return _MultiServiceSelectionSheet(
           services: _sampleServices, // Use sample services for demo
-          title: '${localizations.selectServices} - $barberName', // Localized title
-          initialSelectedServices: tempSelectedServices.toList(), // Start with empty selection
-          // --- NEW: Pass the booking action handlers to the sheet ---
-          onBookNow: () {
-            // This callback is called when "Rebook Now" is pressed in the sheet
-            final List<Service> finalSelectedServices = tempSelectedServices.toList();
+          title: '${localizations.selectServices} - ${_getLocalizedString(barberData['nameKey'], localizations)}', // Localized title
+          // --- MODIFIED: Pass the single booking action handler to the sheet ---
+          onRebook: (List<Service> finalSelectedServices) {
+            print("### _MultiServiceSelectionSheet onRebook called with ${finalSelectedServices.length} services");
+            // This callback is called when "Rebook" is pressed in the sheet
             if (finalSelectedServices.isNotEmpty) {
               // Close the service selection sheet
               Navigator.pop(context, finalSelectedServices);
-              // Immediately show the confirmation dialog for "Rebook Now"
-              // Pass an empty list for initial date/time as it's not needed for "Now"
-              _showBookingConfirmationDialog(
-                context,
-                barberName,
-                finalSelectedServices,
-                localizations,
-                isBookingNow: true, // Indicate it's the "Now" flow
-                initialDate: null, // Not used for "Now"
-                initialTime: null, // Not used for "Now"
-              );
+              print("### Service sheet closed. Calling _navigateToScheduleAndBook...");
+              // Navigate directly to BarberDetailsScreen's Schedule tab and then Bookings Management
+              _navigateToScheduleAndBook(finalSelectedServices, barberData); // Pass barberData (includes ID)
             } else {
-              // Handle case where no services are selected (should ideally be disabled)
+              // Handle case where no services are selected
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -517,58 +578,16 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   ),
                 );
               }
+              print("### No services selected in sheet.");
             }
           },
-          onBookLater: () {
-             // This callback is called when "Rebook Later" is pressed in the sheet
-            final List<Service> finalSelectedServices = tempSelectedServices.toList();
-            if (finalSelectedServices.isNotEmpty) {
-              // Close the service selection sheet
-              Navigator.pop(context, finalSelectedServices);
-              // Show the confirmation dialog for "Rebook Later" which includes date/time pickers
-              _showBookingConfirmationDialog(
-                context,
-                barberName,
-                finalSelectedServices,
-                localizations,
-                isBookingNow: false, // Indicate it's the "Later" flow
-                initialDate: DateTime.now().add(const Duration(days: 1)), // Default to tomorrow
-                initialTime: const TimeOfDay(hour: 10, minute: 0), // Default time
-              );
-            } else {
-              // Handle case where no services are selected (should ideally be disabled)
-              if (context.mounted) {
-                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(localizations.selectAtLeastOneService ?? 'Please select at least one service.'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            }
-          },
-          // --- END OF NEW ---
-          onSelectionUpdate: (updatedSelection) {
-            // Sync selection within the sheet's temporary state
-            tempSelectedServices.clear();
-            tempSelectedServices.addAll(updatedSelection);
-            // Note: The main screen's _cardSelectedServices is not updated here anymore,
-            // as the selection is finalized only upon pressing Book Now/Later.
-          },
+          // --- END OF MODIFIED ---
         );
       },
     );
 
-    // --- MODIFIED: Handle the result from the sheet (if needed for UI updates before dialog) ---
-    // The primary booking logic (showing confirmation dialog) is now handled inside the sheet buttons.
-    // This outer handler can be used if you need to update UI in FavoritesScreen immediately
-    // after the sheet closes but before the confirmation dialog, or handle cancellation.
-    // For now, we'll leave it mostly empty as the flow continues in the sheet buttons.
+    // Optional: Handle result after sheet closes (if needed)
     if (selectedServicesFromSheet != null && selectedServicesFromSheet.isEmpty && context.mounted) {
-       // User explicitly selected no services and confirmed (unlikely with button disabling)
-       // Or logic in sheet buttons prevented dialog. Show snackbar.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localizations.selectAtLeastOneService ?? 'Please select at least one service.'),
@@ -578,290 +597,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         ),
       );
     }
-    // If selectedServicesFromSheet is null, the user cancelled the sheet (drag down), do nothing.
-    // If it contains services, the sheet buttons have already initiated the confirmation flow.
-    // --- END OF MODIFIED ---
+    print("### _handleRebook finished. Sheet result: ${selectedServicesFromSheet?.length ?? 'null'} services");
   }
-  // --- END OF NEW ---
-
-  // --- NEW: Show Booking Confirmation Dialog with Date/Time Pickers (Updated Logic) ---
-  // This function is now primarily called from the buttons inside _MultiServiceSelectionSheet
-  void _showBookingConfirmationDialog(
-    BuildContext context,
-    String barberName,
-    List<Service> selectedServices,
-    AppLocalizations loc, {
-    required bool isBookingNow,
-    DateTime? initialDate, // Used for "Later" flow
-    TimeOfDay? initialTime, // Used for "Later" flow
-  }) async { // Make it async to handle potential awaits inside
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color dialogBgColor = isDarkMode ? Colors.grey[850]! : Colors.white;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
-
-    // --- MODIFIED: State management for date/time within the dialog ---
-    // These variables hold the *dialog's* state for date/time, independent of the sheet
-    DateTime? selectedDate = initialDate;
-    TimeOfDay? selectedTime = initialTime;
-    // --- END OF MODIFIED ---
-
-    // --- MODIFIED: Use showDialog directly, not StatefulBuilder, matching BarbersScreen better for outer dialog ---
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // --- MODIFIED: Use StatefulBuilder inside showDialog for date/time state within confirmation dialog ---
-        return StatefulBuilder(
-          builder: (context, setState) { // setState updates only this dialog's UI
-            return AlertDialog(
-              backgroundColor: dialogBgColor,
-              contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-              // --- FIX 1: Title logic - Only show barber name for "Now", not "Later" ---
-              title: Text(
-                isBookingNow
-                    ? '${loc.rebookNow} - $barberName' // "Rebook Now - Barber Name"
-                    : loc.rebookLater, // Just "Rebook Later" - No extra barber name/breadcrumb
-                style: TextStyle(color: textColor),
-              ),
-              // --- END OF FIX 1 ---
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // --- FIX 1: With text logic - Always show "With Barber Name" ---
-                    Text(
-                      '${loc.withText} $barberName', // e.g., "With Omar Classic"
-                      style: TextStyle(fontStyle: FontStyle.italic, color: subtitleColor),
-                    ),
-                    // --- END OF FIX 1 ---
-                    const SizedBox(height: 20),
-                    // --- MODIFIED: Date & Time Pickers only for "Rebook Later" ---
-                    if (!isBookingNow) ...[
-                      Text(loc.selectDateTime ?? 'Select Date & Time:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate ?? DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(DateTime.now().year + 1),
-                            builder: (context, child) {
-                              return Theme(
-                                 data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update the dialog's state
-                              selectedDate = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_month, color: Colors.white),
-                        label: Text(
-                          selectedDate == null
-                              ? (loc.selectDate ?? 'Select Date')
-                              : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          if (!context.mounted) return; // Guard
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: selectedTime ?? TimeOfDay.now(),
-                            builder: (context, child) {
-                              return Theme(
-                                data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update the dialog's state
-                              selectedTime = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.access_time, color: Colors.white),
-                        label: Text(
-                          selectedTime == null
-                              ? (loc.selectTime ?? 'Select Time')
-                              : selectedTime!.format(context),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    // --- END OF MODIFIED ---
-                    Text(loc.selectedServices, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    // --- FIX: Wrap service items in a scrollable container to prevent overflow ---
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: selectedServices.map((service) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // --- FIX: Use Expanded to prevent text overflow ---
-                                  Expanded(
-                                    child: Text(
-                                      service.name,
-                                      style: TextStyle(color: textColor),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // --- FIX: Wrap cost/duration text ---
-                                  Flexible(
-                                    child: Text(
-                                      '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)} - ${service.duration.inMinutes} ${loc.mins}',
-                                      style: TextStyle(color: subtitleColor, fontSize: 12),
-                                      overflow: TextOverflow.ellipsis, // Handle if still too long
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                  // --- END OF FIX ---
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    // --- END OF FIX ---
-                    const SizedBox(height: 10),
-                    // --- FIX: Wrap summary text ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('${loc.total}:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Flexible(
-                          child: RichText(
-                            text: TextSpan(
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                              children: [
-                                TextSpan(
-                                  text: NumberFormat.currency(
-                                    locale: loc.localeName ?? 'en',
-                                    symbol: 'MAD',
-                                    decimalDigits: 2,
-                                  ).format(selectedServices.fold<double>(0, (sum, item) => sum + item.price)),
-                                  style: const TextStyle(color: mainBlue),
-                                ),
-                                const TextSpan(text: " - "),
-                                TextSpan(
-                                  text: '${selectedServices.fold<int>(0, (sum, item) => sum + item.duration.inMinutes)} ${loc.mins}',
-                                  style: const TextStyle(color: mainBlue),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    // --- END OF FIX ---
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close confirmation dialog
-                  },
-                  child: Text(loc.cancel ?? 'Cancel', style: TextStyle(color: isDarkMode ? Colors.white70 : mainBlue)),
-                ),
-                ElevatedButton(
-                  // --- MODIFIED: Enable button based on isBookingNow or date/time selection ---
-                  onPressed: (!isBookingNow && selectedDate != null && selectedTime != null) || isBookingNow
-                      ? () {
-                          Navigator.pop(context); // Close confirmation dialog
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  loc.bookingSent ?? 'Your booking request was sent. You will receive a confirmation soon.',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                backgroundColor: mainBlue,
-                                duration: const Duration(seconds: 3),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            // --- FIX 2: Navigate to the correct route using routeName ---
-                            // Use the defined route name for BookingsManagementScreen
-                            Navigator.pushNamed(context, BookingsManagementScreen.routeName); // CORRECT NAVIGATION
-                            // --- END OF FIX 2 ---
-                          }
-                        }
-                      : null,
-                  // --- END OF MODIFIED ---
-                  style: ElevatedButton.styleFrom(backgroundColor: mainBlue, foregroundColor: Colors.white),
-                  // --- MODIFIED: Button text based on isBookingNow ---
-                  child: Text(isBookingNow ? loc.rebookNow : loc.rebookLater),
-                  // --- END OF MODIFIED ---
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-  // --- END OF NEW ---
+  // --- END OF MODIFIED ---
 
   @override
   Widget build(BuildContext context) {
@@ -875,21 +613,19 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      // Replace the standard AppBar with a CustomScrollView containing SliverAppBar
       body: CustomScrollView(
         slivers: [
-          // --- SliverAppBar (Copied from Home/Bookings screens) ---
           SliverAppBar(
-            backgroundColor: const Color.fromARGB(255, 52, 52, 198), // Match Home/Bookings
+            backgroundColor: const Color.fromARGB(255, 52, 52, 198),
             floating: true,
             pinned: true,
             snap: false,
             expandedHeight: 80.0,
             flexibleSpace: FlexibleSpaceBar(
-              centerTitle: false, // LEFT ALIGNED like Home/Bookings
+              centerTitle: false,
               titlePadding: const EdgeInsets.only(left: 16, bottom: 14),
               title: Text(
-                localizations.favorites, // Use the localized title
+                localizations.favorites,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -898,7 +634,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               ),
             ),
           ),
-          // --- Wrap the existing content in a SliverToBoxAdapter ---
           SliverToBoxAdapter(
             child: _favorites.isEmpty
                 ? _buildEmptyState(context, localizations, isDarkMode, hintColor, subtitleColor!)
@@ -944,12 +679,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                               ],
                             ),
                           ),
-                          // Render the list of favorites using a standard ListView.builder
-                          // inside the Column, as CustomScrollView/SliverList don't work well here
-                          // within SliverToBoxAdapter for dynamic lists.
                           ListView.builder(
-                            shrinkWrap: true, // Important for ListView inside Column
-                            physics: const NeverScrollableScrollPhysics(), // Disable scrolling for inner ListView
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
                             itemCount: _favorites.length,
                             itemBuilder: (context, index) {
                               final item = _favorites[index];
@@ -970,7 +702,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     ),
                   ),
           ),
-          // --- End of existing content ---
         ],
       ),
     );
@@ -1173,29 +904,21 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   }
 }
 
-// --- MODIFIED: _MultiServiceSelectionSheet Widget (Enhanced with Draggable, Calculations, Correct Buttons) ---
+// --- MODIFIED: _MultiServiceSelectionSheet Widget (Single Rebook Button) ---
 /// A DRAGGABLE modal bottom sheet for selecting multiple services.
 /// Displays live total cost and duration.
-/// Has "Rebook Now" and "Rebook Later" buttons that trigger specific flows.
+/// Has a single "Rebook" button that navigates to BarberDetailsScreen's Schedule tab and Bookings Management.
 class _MultiServiceSelectionSheet extends StatefulWidget {
   final List<Service> services;
   final String title;
-  final List<Service> initialSelectedServices;
-  final Function(List<Service>) onSelectionUpdate;
-  // --- NEW: Handlers for the specific booking actions ---
-  final VoidCallback onBookNow;
-  final VoidCallback onBookLater;
-  // --- END OF NEW ---
+  // --- MODIFIED: Single handler for the Rebook action, taking selected services ---
+  final Function(List<Service> selectedServices) onRebook; // Takes selected services
+  // --- REMOVED: onSelectionUpdate and initialSelectedServices ---
 
   const _MultiServiceSelectionSheet({
     required this.services,
     required this.title,
-    required this.initialSelectedServices,
-    required this.onSelectionUpdate,
-    // --- NEW: Constructor parameters for button handlers ---
-    required this.onBookNow,
-    required this.onBookLater,
-    // --- END OF NEW ---
+    required this.onRebook, // Only required parameter now
   });
 
   @override
@@ -1203,12 +926,14 @@ class _MultiServiceSelectionSheet extends StatefulWidget {
 }
 
 class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet> {
+  // --- MODIFIED: Use a local Set to manage selections within the sheet ---
   late Set<Service> _selectedServices;
 
   @override
   void initState() {
     super.initState();
-    _selectedServices = Set<Service>.from(widget.initialSelectedServices);
+    // --- MODIFIED: Initialize with an empty set of selected services ---
+    _selectedServices = <Service>{};
   }
 
   void _toggleService(Service service) {
@@ -1218,7 +943,7 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
       } else {
         _selectedServices.add(service);
       }
-      widget.onSelectionUpdate(_selectedServices.toList());
+      // --- REMOVED: No need to call onSelectionUpdate for the single-button flow ---
     });
   }
 
@@ -1226,7 +951,6 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    // Use scaffold background color for consistency with the sheet's transparency trick
     final Color cardBg = Theme.of(context).scaffoldBackgroundColor;
     final Color borderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
@@ -1241,31 +965,25 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
     }
     // --- END OF CALCULATIONS ---
 
-    // --- NEW: Implement DraggableScrollableSheet ---
+    // --- MODIFIED: Implement DraggableScrollableSheet ---
     return DraggableScrollableSheet(
-      initialChildSize: 0.5, // Start at 50% of screen height
-      minChildSize: 0.3,     // Minimum 30%
-      maxChildSize: 0.9,     // Maximum 90%
-      expand: false,         // Don't force full height
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
       builder: (BuildContext context, ScrollController scrollController) {
         return Container(
-          // --- CRITICAL: Make the container background transparent ---
-          // This allows the DraggableScrollableSheet to show the content behind it
-          // and enables the resizing handle at the top.
-          color: Colors.transparent,
+          color: Colors.transparent, // Make outer container transparent
           child: Container(
-            // --- INNER CONTAINER: This one has the actual background and rounded corners ---
             decoration: BoxDecoration(
-              color: cardBg, // Use the scaffold background color
+              color: cardBg,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Padding(
-              // Add padding inside the inner container
               padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- DRAG HANDLE: Visual indicator for dragging ---
                   Center(
                     child: Container(
                       width: 40,
@@ -1287,10 +1005,9 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
                   ),
                   const SizedBox(height: 12),
-                  // --- SERVICE LIST: Wrapped in Expanded and uses the passed scrollController ---
                   Expanded(
                     child: ListView.builder(
-                      controller: scrollController, // Link to DraggableScrollableSheet's scroll controller
+                      controller: scrollController,
                       itemCount: widget.services.length,
                       itemBuilder: (context, index) {
                         final service = widget.services[index];
@@ -1324,9 +1041,7 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
                                       Checkbox(
                                         value: isSelected,
                                         onChanged: (bool? value) {
-                                          if (value == true) {
-                                            _toggleService(service);
-                                          } else if (value == false) {
+                                          if (value == true || value == false) {
                                             _toggleService(service);
                                           }
                                         },
@@ -1348,8 +1063,7 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
                                                 color: textColor,
                                               ),
                                             ),
-                                            if (service.description != null &&
-                                                service.description!.isNotEmpty)
+                                            if (service.description != null && service.description!.isNotEmpty)
                                               Text(
                                                 service.description!,
                                                 style: TextStyle(fontSize: 14, color: subtitleColor),
@@ -1381,9 +1095,7 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
                       },
                     ),
                   ),
-                  // --- END OF SERVICE LIST ---
                   const SizedBox(height: 16),
-                  // --- LIVE CALCULATIONS SUMMARY ---
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -1421,66 +1133,40 @@ class _MultiServiceSelectionSheetState extends State<_MultiServiceSelectionSheet
                       ],
                     ),
                   ),
-                  // --- END OF LIVE CALCULATIONS SUMMARY ---
                   const SizedBox(height: 16),
-                  // --- ACTION BUTTONS: Rebook Now / Rebook Later ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Rebook Later Button (Outlined)
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.4,
-                        child: OutlinedButton(
-                          onPressed: _selectedServices.isEmpty
-                              ? null // Disable if no services selected
-                              : widget.onBookLater, // Call the provided handler
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: mainBlue, width: 2.0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          child: Text(
-                            loc.rebookLater,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: mainBlue,
-                            ),
-                          ),
+                  // --- ACTION BUTTON: Single Rebook Button ---
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _selectedServices.isEmpty
+                          ? null
+                          : () {
+                              print("### Rebook button pressed in _MultiServiceSelectionSheet");
+                              widget.onRebook(_selectedServices.toList()); // Pass selected services
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: mainBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ).copyWith(
+                        backgroundColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+                          if (states.contains(WidgetState.disabled)) {
+                            return Colors.grey;
+                          }
+                          return mainBlue;
+                        }),
+                      ),
+                      child: Text(
+                        loc.rebook,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      // Rebook Now Button (Filled)
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.4,
-                        child: ElevatedButton(
-                          onPressed: _selectedServices.isEmpty
-                              ? null // Disable if no services selected
-                              : widget.onBookNow, // Call the provided handler
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: mainBlue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ).copyWith(
-                            backgroundColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
-                              if (states.contains(WidgetState.disabled)) {
-                                return Colors.grey;
-                              }
-                              return mainBlue;
-                            }),
-                          ),
-                          child: Text(
-                            loc.rebookNow,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  // --- END OF ACTION BUTTONS ---
+                  // --- END OF ACTION BUTTON ---
                   const SizedBox(height: 8),
                 ],
               ),

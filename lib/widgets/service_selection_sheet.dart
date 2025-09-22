@@ -1,28 +1,25 @@
 // lib/widgets/service_selection_sheet.dart
 import 'package:flutter/material.dart';
-// Import your Barber and Service models
 import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import '../models/service.dart'; // For formatting duration if needed
+import '../models/service.dart';
 
 const Color mainBlue = Color(0xFF3434C6);
 
-/// A modal bottom sheet for selecting MULTIPLE services from a given list.
-/// Takes a list of services, a title, initial selections, and callbacks.
+/// A modal bottom sheet for selecting services from a given list.
+/// Takes a list of services and a title.
+/// Has a single "Book" button that returns the selected services when pressed.
 class ServiceSelectionSheet extends StatefulWidget {
   final List<Service> services;
   final String title;
+  // Optional: Allow passing initial selections if needed by the caller
   final List<Service> initialSelectedServices;
-  final Function(List<Service>) onSelectionUpdate; // Callback for real-time updates
-  final Function(List<Service>) onConfirm; // Callback when user confirms selection
 
   const ServiceSelectionSheet({
     super.key,
     required this.services,
     required this.title,
-    required this.initialSelectedServices,
-    required this.onSelectionUpdate,
-    required this.onConfirm,
+    this.initialSelectedServices = const [],
   });
 
   @override
@@ -35,7 +32,7 @@ class _ServiceSelectionSheetState extends State<ServiceSelectionSheet> {
   @override
   void initState() {
     super.initState();
-    // Initialize with the services passed from the caller
+    // Initialize with the initial services passed, or empty set
     _selectedServices = Set<Service>.from(widget.initialSelectedServices);
   }
 
@@ -46,8 +43,6 @@ class _ServiceSelectionSheetState extends State<ServiceSelectionSheet> {
       } else {
         _selectedServices.add(service);
       }
-      // Notify the caller of the change for constraint logic
-      widget.onSelectionUpdate(_selectedServices.toList());
     });
   }
 
@@ -55,20 +50,24 @@ class _ServiceSelectionSheetState extends State<ServiceSelectionSheet> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color cardBg = isDark ? const Color(0xFF303030) : Colors.white; // Consistent dialog bg
+    final Color cardBg = isDark ? const Color(0xFF303030) : Colors.white;
     final Color borderColor = isDark ? Colors.grey[700]! : Colors.grey[300]!;
     final Color textColor = isDark ? Colors.white : Colors.black87;
     final Color? subtitleColor = isDark ? Colors.grey[400]! : Colors.grey[600];
 
     return Container(
       padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 16),
-      height: MediaQuery.of(context).size.height * 0.6, // Consistent height
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+        minHeight: MediaQuery.of(context).size.height * 0.4,
+      ),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: isDark ? const Color(0xFF1E1E1E) : cardBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             widget.title,
@@ -80,8 +79,9 @@ class _ServiceSelectionSheetState extends State<ServiceSelectionSheet> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
           ),
           const SizedBox(height: 12),
-          Expanded( // Allow scrolling for the list
+          Flexible(
             child: ListView.builder(
+              shrinkWrap: true,
               itemCount: widget.services.length,
               itemBuilder: (context, index) {
                 final service = widget.services[index];
@@ -114,22 +114,18 @@ class _ServiceSelectionSheetState extends State<ServiceSelectionSheet> {
                         Expanded(
                           child: Row(
                             children: [
-                              // --- ADDED: Checkbox for multi-selection ---
                               Checkbox(
                                 value: isSelected,
                                 onChanged: (bool? value) {
-                                  if (value == true) {
-                                    _toggleService(service);
-                                  } else if (value == false) {
+                                  if (value != null) {
                                     _toggleService(service);
                                   }
                                 },
-                                activeColor: mainBlue, // Blue checkbox when selected
+                                activeColor: mainBlue,
                                 checkColor: Colors.white,
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Smaller touch target
-                                visualDensity: const VisualDensity(horizontal: -4, vertical: -4), // Compact size
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
                               ),
-                              // --- END ADDED ---
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
@@ -159,7 +155,11 @@ class _ServiceSelectionSheetState extends State<ServiceSelectionSheet> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
+                              NumberFormat.currency(
+                                locale: loc.localeName ?? 'en',
+                                symbol: loc.mad ?? 'MAD',
+                                decimalDigits: 2
+                              ).format(service.price),
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 4),
@@ -177,41 +177,38 @@ class _ServiceSelectionSheetState extends State<ServiceSelectionSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context), // Just close the sheet
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: mainBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: const BorderSide(color: mainBlue),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _selectedServices.isEmpty
+                  ? null
+                  : () {
+                      Navigator.pop(context, _selectedServices.toList());
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: mainBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(loc.cancel ?? 'Cancel'),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ).copyWith(
+                backgroundColor: WidgetStateProperty.resolveWith<Color?>(
+                    (Set<WidgetState> states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return Colors.grey;
+                  }
+                  return mainBlue;
+                }),
               ),
-              ElevatedButton(
-                onPressed: _selectedServices.isEmpty
-                    ? null // Disable if nothing is selected
-                    : () {
-                        // Pass the final selection back to the caller
-                        widget.onConfirm(_selectedServices.toList());
-                        Navigator.pop(context); // Close the sheet after confirming
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: mainBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Text(
+                loc.book ?? 'Book',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Text(loc.confirm ?? 'Confirm'),
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
         ],

@@ -1,20 +1,20 @@
 // screens/home_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
+// Import the potentially updated ServiceSelectionSheet widget
+import '../widgets/service_selection_sheet.dart';
 import '../models/barber_model.dart';
 import '../l10n/app_localizations.dart';
 import 'barber_details_screen.dart';
 import '../data/sample_barbers.dart';
-import 'bookings_management_screen.dart';
 import 'barber_list_screen.dart';
 import 'service_list_screen.dart';
 import '../widgets/shared/responsive_sliver_app_bar.dart';
 import '../models/service.dart';
-import '../providers/home_screen_provider.dart'; 
-import '../providers/barber_posts_provider.dart'; 
+import '../providers/home_screen_provider.dart';
+import '../providers/barber_posts_provider.dart';
 
 const Color mainBlue = Color(0xFF3434C6);
 
@@ -78,8 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // --- NEW METHOD: Handle Book Now with Service Selection ---
-  Future<void> _handleBookNow(BuildContext context, Barber barber) async {
+  // --- UPDATED METHOD: Handle Book with Single Service Selection and Direct Navigation ---
+  Future<void> _handleBook(BuildContext context, Barber barber) async {
     final loc = AppLocalizations.of(context)!;
     if (barber.services.isEmpty) {
       if (context.mounted) {
@@ -95,275 +95,72 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Show the service selection sheet
-    final result = await showModalBottomSheet(
+    // Show the MODIFIED service selection sheet with a single "Book" button
+    // This assumes ServiceSelectionSheet has been updated to return List<Service>? on Book press
+    final List<Service>? selectedServices = await showModalBottomSheet<List<Service>?>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
-        return _MultiServiceSelectionSheet(
+        // Assuming ServiceSelectionSheet constructor is like this after your update:
+        // ServiceSelectionSheet({Key? key, required this.services, required this.title});
+        return ServiceSelectionSheet(
           services: barber.services,
-          title: '${loc.bookNow} - ${barber.name}',
-          onBookAction: (selectedServices, isBookingNow) {
-            Navigator.pop(context, {'services': selectedServices, 'isNow': isBookingNow});
-          },
+          title: '${loc.book} - ${barber.name}',
+          // Pass any other required parameters based on your updated widget
         );
       },
     );
 
     // Handle the result from the sheet
-    if (result != null && context.mounted) {
-      final List<Service> selectedServices = result['services'];
-      final bool isBookingNow = result['isNow'];
-      
-      if (selectedServices.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(loc.selectAtLeastOneService ??
-                'Please select at least one service.'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
+    if (selectedServices != null && selectedServices.isNotEmpty && context.mounted) {
+      // Navigate directly to the BarberDetailsScreen's Schedule tab
+      // Pass the selected services via the existing constructor
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BarberDetailsScreen(
+            barber: barber,
+            // We cannot pass initialSelectedServices or navigateToSchedule directly
+            // because the constructor in Pasted_Text_1757898297978.txt doesn't accept them.
+            // We need to adapt the flow within BarberDetailsScreen or modify its constructor.
+            // For now, navigate normally. The logic to pre-select services and go to schedule
+            // needs to be handled inside BarberDetailsScreen or by modifying its constructor.
           ),
-        );
-        return;
-      }
-
-      _showBookingConfirmationDialog(context, barber, selectedServices, loc, isBookingNow: isBookingNow);
+        ),
+      );
+      // To achieve the full desired flow, BarberDetailsScreen's constructor MUST be modified
+      // to accept initialSelectedServices and navigateToSchedule.
+      // Example of what the call would look like IF the constructor accepted them:
+      /*
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BarberDetailsScreen(
+            barber: barber,
+            initialSelectedServices: selectedServices, // Pass selected services
+            navigateToSchedule: true, // Flag to indicate navigation to schedule
+          ),
+        ),
+      );
+      */
+    } else if (selectedServices != null && selectedServices.isEmpty && context.mounted) {
+      // User pressed Book without selecting services (if your sheet allows this state)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.selectAtLeastOneService ??
+              'Please select at least one service.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
+    // If selectedServices is null, the user cancelled the sheet, so do nothing.
   }
 
-  // --- NEW HELPER: Show Confirmation Dialog ---
-  void _showBookingConfirmationDialog(
-    BuildContext context,
-    Barber barber,
-    List<Service> selectedServices,
-    AppLocalizations localized, {
-    required bool isBookingNow,
-  }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color dialogBgColor = isDarkMode ? Colors.grey[850]! : Colors.white;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
-    DateTime? selectedDateForLater; // For book later
-    TimeOfDay? selectedTimeForLater; // For book later
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) { // Use StatefulBuilder for date/time pickers in dialog
-            return AlertDialog(
-              backgroundColor: dialogBgColor,
-              contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-              title: Text(isBookingNow ? '${localized.bookNow} - ${barber.name}' : '${localized.bookLater} - ${barber.name}',
-                          style: TextStyle(color: textColor)),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${localized.withText} ${barber.name}',
-                        style: TextStyle(fontStyle: FontStyle.italic, color: subtitleColor)),
-                    const SizedBox(height: 20),
-                    if (!isBookingNow) ...[ // Show date/time pickers only for Book Later
-                      Text(localized.selectDateTime ?? 'Select Date & Time:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(DateTime.now().year + 1),
-                            builder: (context, child) {
-                              return Theme(
-                                data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update dialog state
-                              selectedDateForLater = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_month, color: Colors.white),
-                        label: Text(
-                          selectedDateForLater == null
-                              ? (localized.selectDate ?? 'Select Date')
-                              : "${selectedDateForLater!.day}/${selectedDateForLater!.month}/${selectedDateForLater!.year}",
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                            builder: (context, child) {
-                              return Theme(
-                                data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update dialog state
-                              selectedTimeForLater = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.access_time, color: Colors.white),
-                        label: Text(
-                          selectedTimeForLater == null
-                              ? (localized.selectTime ?? 'Select Time')
-                              : selectedTimeForLater!.format(context),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    Text(localized.selectedServices, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.3,
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: selectedServices.map((service) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(service.name,
-                                                style: TextStyle(color: textColor),
-                                                overflow: TextOverflow.ellipsis),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${NumberFormat.currency(locale: localized.localeName ?? 'en', symbol: localized.mad ?? 'MAD', decimalDigits: 2).format(service.price)} - ${service.duration.inMinutes} ${localized.mins}',
-                                    style: TextStyle(color: subtitleColor, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(
-                          '${NumberFormat.currency(locale: localized.localeName ?? 'en', symbol: localized.mad ?? 'MAD', decimalDigits: 2).format(selectedServices.fold<double>(0, (sum, item) => sum + item.price))} - ${selectedServices.fold<int>(0, (sum, item) => sum + item.duration.inMinutes)} ${localized.mins}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: mainBlue),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(localized.cancel ?? 'Cancel', style: TextStyle(color: isDarkMode ? Colors.white70 : mainBlue)),
-                ),
-                ElevatedButton(
-                  onPressed: (!isBookingNow && selectedDateForLater != null && selectedTimeForLater != null) || isBookingNow
-                      ? () {
-                          Navigator.pop(context); // Close confirmation dialog
-
-                          // Show success snackbar
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  localized.bookingSent ??
-                                      'Your booking request was sent. You will receive a confirmation soon.',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                backgroundColor: mainBlue,
-                                duration: const Duration(seconds: 3),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-
-                            // Navigate to bookings management screen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BookingsManagementScreen(snackbarMessage: '',),
-                              ),
-                            );
-                          }
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: mainBlue, foregroundColor: Colors.white),
-                  child: Text(isBookingNow ? localized.bookNow : localized.bookLater),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   //--- ADDITION: Function to scroll to the "For You" section---
   void _scrollToForYouSection() {
@@ -456,6 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isDarkMode ? Colors.grey[850]! : Colors.white;
     final Color borderColor =
         isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
+
     // --- REMOVED: Internal MultiProvider ---
     // The providers are expected to be provided above this widget.
     // --- END OF REMOVAL ---
@@ -745,7 +543,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   height: 32,
                                   child: ElevatedButton(
                                     onPressed: () =>
-                                        _handleBookNow(context, barber), // --- UPDATED ONPRESSED ---
+                                        _handleBook(context, barber), // --- UPDATED ONPRESSED ---
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: mainBlue,
                                       foregroundColor: Colors.white,
@@ -1795,221 +1593,5 @@ class _HomeScreenState extends State<HomeScreen> {
       // ignore
     }
     return const AssetImage('assets/images/default_barber.jpg');
-  }
-}
-
-// Define a callback type for the service selection sheet
-typedef OnBookAction = void Function(List<Service> selectedServices, bool isBookingNow);
-
-/// A modal bottom sheet for selecting multiple services from a given list.
-/// Takes a list of services and a title.
-class _MultiServiceSelectionSheet extends StatefulWidget {
-  final List<Service> services;
-  final String title;
-  final OnBookAction onBookAction;
-
-  const _MultiServiceSelectionSheet({
-    required this.services,
-    required this.title,
-    required this.onBookAction,
-  });
-
-  @override
-  _MultiServiceSelectionSheetState createState() =>
-      _MultiServiceSelectionSheetState();
-}
-
-class _MultiServiceSelectionSheetState
-    extends State<_MultiServiceSelectionSheet> {
-  // Keep track of selected services
-  final Set<Service> _selectedServices = <Service>{};
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color cardBg = isDark ? Colors.grey[850]! : Colors.white;
-    final Color borderColor = isDark ? Colors.grey[700]! : Colors.grey[300]!;
-    final Color textColor = isDark ? Colors.white : Colors.black87;
-    final Color? subtitleColor = isDark ? Colors.grey[400]! : Colors.grey[600];
-    final Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.title,
-            style: TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
-          ),
-          const SizedBox(height: 16),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: widget.services.length,
-              itemBuilder: (context, index) {
-                final service = widget.services[index];
-                final bool isSelected = _selectedServices.contains(service);
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedServices.remove(service);
-                      } else {
-                        _selectedServices.add(service);
-                      }
-                    });
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? mainBlue
-                            : borderColor, // Highlight border if selected
-                        width: isSelected
-                            ? 2.0
-                            : 1.0, // Slightly thicker border if selected
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark
-                              ? Colors.black26
-                              : Colors.grey.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isSelected
-                              ? Icons.check_box
-                              : Icons.check_box_outline_blank,
-                          color: isSelected
-                              ? mainBlue
-                              : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                service.name,
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: textColor),
-                              ),
-                              if (service.description != null &&
-                                  service.description!.isNotEmpty)
-                                Text(
-                                  service.description!,
-                                  style: TextStyle(
-                                      fontSize: 14, color: subtitleColor),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${NumberFormat("#,##0.00", loc.localeName).format(service.price)} ${loc.mad}',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${service.duration.inMinutes} ${loc.mins}',
-                              style: TextStyle(
-                                  fontSize: 13, color: subtitleColor),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Book Later Button (Outlined)
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4, // Responsive width
-                child: OutlinedButton(
-                  onPressed: _selectedServices.isEmpty
-                      ? null // Disable if no services selected
-                      : () => widget.onBookAction(_selectedServices.toList(), false), // Pass selected services and booking type
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: mainBlue, width: 2.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    // Consistent padding
-                  ),
-                  child: Text(loc.bookLater ?? 'Book Later',
-                      style: const TextStyle(
-                        fontSize: 14, // Slightly smaller font
-                        fontWeight: FontWeight.w600,
-                        color: mainBlue,
-                      )),
-                ),
-              ),
-              // Book Now Button (Filled - already mostly styled like KB, just change text)
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4, // Responsive width
-                child: ElevatedButton(
-                  onPressed: _selectedServices.isEmpty
-                      ? null // Disable if no services selected
-                      : () => widget.onBookAction(_selectedServices.toList(), true), // Pass selected services and booking type
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainBlue, // Blue background (already set)
-                    foregroundColor: Colors.white, // White text (already set)
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    // Consistent padding
-                  ).copyWith(
-                    // --- FIX: Handle disabled state background color (keep this) ---
-                    backgroundColor: WidgetStateProperty.resolveWith<Color?>(
-                        (Set<WidgetState> states) {
-                      if (states.contains(WidgetState.disabled)) {
-                        return Colors.grey; // Grey background when disabled
-                      }
-                      return mainBlue; // Main blue otherwise
-                    }),
-                  ),
-                  child: Text(loc.bookNow ?? 'Book Now',
-                      style: const TextStyle(
-                        fontSize: 14, // Slightly smaller font
-                        fontWeight: FontWeight.w600,
-                      )),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
   }
 }

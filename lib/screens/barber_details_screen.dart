@@ -7,14 +7,29 @@ import '../models/barber_model.dart';
 import '../l10n/app_localizations.dart';
 import '../models/service.dart';
 import '../screens/bookings_management_screen.dart'; // Import for navigation after booking
-import '../widgets/service_selection_sheet.dart';
+// Ensure this import points to the updated ServiceSelectionSheet with only one "Book" button
+import '../widgets/service_selection_sheet.dart'; 
 
 const Color mainBlue = Color(0xFF3434C6);
 const Color warningOrange = Color(0xFFFFA500);
 
 class BarberDetailsScreen extends StatefulWidget {
   final Barber barber;
-  const BarberDetailsScreen({super.key, required this.barber});
+  // --- ADDED: Parameters for initial state and navigation ---
+  /// Services to be pre-selected when the screen is opened.
+  final List<Service>? initialSelectedServices;
+  /// If true, automatically navigate to the Schedule tab after [initialSelectedServices] are set.
+  final bool navigateToSchedule;
+  // --- END ADDED ---
+
+  const BarberDetailsScreen({
+    super.key,
+    required this.barber,
+    // --- ADDED: New parameters with defaults ---
+    this.initialSelectedServices,
+    this.navigateToSchedule = false,
+    // --- END ADDED ---
+  });
 
   @override
   State<BarberDetailsScreen> createState() => _BarberDetailsScreenState();
@@ -25,10 +40,10 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
   late PageController _pageController;
   late PageController _headerImageController;
   late TabController _mainTabController;
-  int _currentIndex = 0;
+  int _currentIndex = 0; // Default to About tab
   int _currentHeaderImageIndex = 0;
   String? _selectedTimeSlotForBooking;
-  int _selectedDayIndex = DateTime.now().weekday - 1;
+  int _selectedDayIndex = DateTime.now().weekday - 1; // Default to today
   Timer? _carouselTimer;
   bool _userIsInteracting = false;
   static const int _carouselIntervalMs = 3000;
@@ -45,28 +60,31 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     return true;
   }
 
-  Set<int> selectedServiceIndices = {};
+  // --- MODIFIED: selectedServiceIndices type for easier handling ---
+  Set<int> selectedServiceIndices = <int>{};
+  // --- END MODIFIED ---
   bool _isFavorite = false;
   int _userRating = 5;
-  final List<Map<String, dynamic>> reviews = [
+  // --- MODIFIED: Reviews list to be dynamic ---
+  List<Map<String, dynamic>> reviews = [
     {
       "name": "Adam",
       "comment": "Excellent service and professional barber! The fade was perfect.",
       "date": "12 July 2025",
-      "rating": 5
+      "rating": 5 // Dynamic rating
     },
     {
       "name": "Lina",
       "comment": "Very clean and punctual. Will come again. Loved the beard trim!",
       "date": "5 July 2025",
-      "rating": 4
+      "rating": 4 // Dynamic rating
     },
     {
       "name": "Sophie M.",
       "comment":
         "The hair coloring was amazing! My hair has never looked better. Highly recommend!",
       "date": "1 August 2025",
-      "rating": 5
+      "rating": 5 // Dynamic rating
     },
   ];
   final TextEditingController _reviewController = TextEditingController();
@@ -85,6 +103,46 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     _pageController.addListener(_handlePageChange);
     _headerImageController.addListener(_handleHeaderImageChange);
     _startCarouselTimer();
+
+    // --- ADDED: Logic to handle initial state from constructor ---
+    // This logic handles pre-selected services and direct navigation to Schedule tab.
+    if (widget.initialSelectedServices != null && widget.initialSelectedServices!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            // Convert List<Service> to Set<int> indices based on the barber's service list
+            selectedServiceIndices = widget.initialSelectedServices!
+                .map((service) => widget.barber.services.indexOf(service))
+                .where((index) => index != -1) // Filter out services not found in barber's list
+                .toSet();
+            print('### initState: Set initial selected services indices: $selectedServiceIndices');
+          });
+
+          // If navigateToSchedule is true, switch to the Schedule tab after state is set
+          if (widget.navigateToSchedule) {
+             print('### initState: navigateToSchedule flag is true, scheduling navigation to Schedule tab.');
+             // Use a delay to ensure UI updates are complete before animating
+             Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted) {
+                    print('### initState: Executing delayed navigation to Schedule tab.');
+                    _navigateToScheduleTab(); // This will animate to tab index 2
+                } else {
+                     print("### initState: Widget not mounted when trying to navigate to Schedule tab.");
+                }
+             });
+          }
+        }
+      });
+    } else if (widget.navigateToSchedule) {
+        // If only navigateToSchedule is true (e.g., direct "Book" button press)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+                print('### initState: Only navigateToSchedule is true. Navigating to Schedule tab.');
+                _navigateToScheduleTab();
+            }
+        });
+    }
+    // --- END ADDED ---
   }
 
   void _startCarouselTimer() {
@@ -161,6 +219,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
   }
 
   void _navigateToScheduleTab() {
+    // This logic remains the same, just ensure it uses selectedServiceIndices correctly
     if (selectedServiceIndices.isEmpty) {
       final loc = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -177,10 +236,10 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       return;
     }
     setState(() {
-      _selectedTimeSlotForBooking = null;
+      _selectedTimeSlotForBooking = null; // Reset time slot when navigating
     });
     _pageController.animateToPage(
-      2,
+      2, // Schedule tab index
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -191,23 +250,20 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     _navigateToScheduleTab();
   }
 
-  // --- CORRECTED FIX ---
-  // Simplified and robust navigation function using Future.delayed and mounted check.
+  // --- FIXED VERSION ---
+  // Simplified and direct navigation function.
   void _confirmAndNavigate() {
     final loc = AppLocalizations.of(context)!;
     final selectedServices = selectedServiceIndices
         .map((index) => widget.barber.services[index])
         .toList();
     final selectedSlot = _selectedTimeSlotForBooking;
-
     // Log the booking details for debugging.
-    print('Booking confirmed for ${widget.barber.name} for slot: $selectedSlot, services: ${selectedServices.map((s) => s.name).join(', ')}');
-
-    // --- DIRECT AND SAFE FIX ---
+    print('### _confirmAndNavigate: Booking confirmed for ${widget.barber.name} for slot: $selectedSlot, services: ${selectedServices.map((s) => s.name).join(', ')}');
+    // --- DIRECT FIX ---
     // Define the snackbar message
     final String snackbarMessage = loc.bookingConfirmedNow ??
         'Your booking is confirmed! You will receive a confirmation shortly.';
-
     // Show the confirmation Snackbar message immediately.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -219,48 +275,51 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
         duration: const Duration(seconds: 3),
       ),
     );
-
+    print('### _confirmAndNavigate: SnackBar shown');
     // Navigate to the Bookings Management Screen after a brief delay.
-    // This ensures the snackbar starts showing.
-    // Using 'mounted' check is the safest way to prevent navigation if the widget is disposed.
     Future.delayed(const Duration(milliseconds: 100), () {
-      // Double-check mounted status and required conditions before navigating
-      if (mounted &&
-          selectedServiceIndices.isNotEmpty &&
-          _selectedTimeSlotForBooking != null) {
+      print('### _confirmAndNavigate: Future.delayed executing. mounted: $mounted');
+      if (mounted) {
+        print('### _confirmAndNavigate: Attempting navigation to BookingsManagementScreen');
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => BookingsManagementScreen(
-                // Pass the snackbarMessage as required
+                // Assuming BookingsManagementScreen expects a snackbarMessage parameter correctly
                 snackbarMessage: snackbarMessage),
           ),
         );
+        print('### _confirmAndNavigate: Navigation command sent');
       } else {
-        // Log if navigation was skipped
-        print("Navigation skipped: mounted=$mounted, services=${selectedServiceIndices.isNotEmpty}, slot=${_selectedTimeSlotForBooking != null}");
+         print("### _confirmAndNavigate: Widget not mounted, skipping navigation.");
       }
     });
-    // --- END OF DIRECT AND SAFE FIX ---
+    // --- END OF DIRECT FIX ---
   }
-  // --- END OF CORRECTED FIX ---
+  // --- END OF FIXED VERSION ---
 
   Future<void> _showFinalBookingConfirmationDialog() async {
+    print('### _showFinalBookingConfirmationDialog: called');
+    if (!mounted) {
+        print("### _showFinalBookingConfirmationDialog: Widget not mounted, returning.");
+        return;
+    }
     final loc = AppLocalizations.of(context)!;
     // Ensure conditions are met before showing dialog
+    print('### _showFinalBookingConfirmationDialog: Checking conditions. selectedServiceIndices.isEmpty: ${selectedServiceIndices.isEmpty}, _selectedTimeSlotForBooking == null: ${_selectedTimeSlotForBooking == null}');
     if (selectedServiceIndices.isEmpty || _selectedTimeSlotForBooking == null) {
-       print("Cannot show confirmation dialog: Services or time slot missing.");
+       print("### _showFinalBookingConfirmationDialog: Cannot show confirmation dialog: Services or time slot missing.");
       return;
     }
-
     final List<Service> selectedServices = selectedServiceIndices
         .map((index) => widget.barber.services[index])
         .toList();
     final String selectedSlot = _selectedTimeSlotForBooking!;
-
+    print('### _showFinalBookingConfirmationDialog: Conditions met. Services: ${selectedServices.map((s) => s.name)}, Slot: $selectedSlot');
     // Show the dialog and await the user's choice.
     final confirm = await showDialog<bool>(
-      context: context, // Use the main screen's context
+      context: context,
       builder: (BuildContext dialogContext) {
+        print('### _showFinalBookingConfirmationDialog: Building dialog...');
         final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
         final Color dialogBgColor = isDark ? Colors.grey[850]! : Colors.white;
         final Color textColor = isDark ? Colors.white : Colors.black87;
@@ -302,32 +361,32 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
+              onPressed: () {
+                print('### _showFinalBookingConfirmationDialog: Cancel button pressed');
+                Navigator.pop(dialogContext, false);
+              },
               child: Text(
                 loc.cancel ?? 'Cancel',
                 style: TextStyle(color: isDark ? Colors.white : mainBlue),
               ),
             ),
-            // --- CRITICAL FIX ---
-            // Handle confirmation directly within the button's onPressed.
-            // Pop the dialog first, then schedule navigation.
             ElevatedButton(
               onPressed: () {
-                 // 1. Pop the dialog immediately
+                 print('### _showFinalBookingConfirmationDialog: Confirm button pressed');
+                 // Pop the dialog first
                  Navigator.pop(dialogContext, true);
-
-                 // 2. Schedule the final navigation logic after the dialog closes.
-                 // Using microtask ensures it runs after the dialog's context is fully disposed.
+                 print('### _showFinalBookingConfirmationDialog: Dialog popped');
+                 // Schedule the final navigation logic after the dialog closes.
                  Future.microtask(() {
-                   // Check if the widget is still mounted before proceeding
+                   print('### _showFinalBookingConfirmationDialog: Confirm button - Future.microtask executing. mounted: $mounted');
                    if (mounted) {
-                     _confirmAndNavigate(); // Call the navigation function
+                     _confirmAndNavigate();
+                     print('### _showFinalBookingConfirmationDialog: _confirmAndNavigate called from Future.microtask');
                    } else {
-                     print("Widget unmounted, skipping navigation after dialog confirm.");
+                     print("### _showFinalBookingConfirmationDialog: Widget unmounted, skipping navigation after dialog confirm.");
                    }
                  });
               },
-              // --- END OF CRITICAL FIX ---
               style: ElevatedButton.styleFrom(
                 backgroundColor: mainBlue,
                 foregroundColor: Colors.white,
@@ -340,74 +399,96 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
         );
       },
     );
-
-    // --- REMOVED REDUNDANT CALL ---
-    // The navigation logic is now handled by the button's onPressed callback.
-    // Calling _confirmAndNavigate() here again could lead to double navigation or context issues.
-    // --- END OF REMOVAL ---
+    print('### _showFinalBookingConfirmationDialog: Dialog closed. User confirmed? $confirm');
   }
 
+  // --- UPDATED _showServiceSelectionSheet ---
+  // This function handles the flow after the service selection sheet is closed in Scenario B.
+  // It updates the state and then directly calls the confirmation dialog.
+  // Also used internally for the streamlined flow within this screen.
   Future<void> _showServiceSelectionSheet(String selectedSlot) async {
-  final loc = AppLocalizations.of(context)!;
+    print('### _showServiceSelectionSheet: called with slot: $selectedSlot');
+    final loc = AppLocalizations.of(context)!;
 
-  final List<Service>? confirmedServices = await showModalBottomSheet<List<Service>?>(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (BuildContext sheetContext) {
-      final List<Service> initialSelectedServices = selectedServiceIndices
-          .map((index) => widget.barber.services.elementAtOrNull(index))
-          .whereType<Service>()
-          .toList();
+    // --- CHANGED: Simplified call to showModalBottomSheet ---
+    // It now directly awaits the result from the MODIFIED ServiceSelectionSheet (single button)
+    final List<Service>? confirmedServices = await showModalBottomSheet<List<Service>?>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        print('### _showServiceSelectionSheet: Building MODIFIED ServiceSelectionSheet...');
 
-      return ServiceSelectionSheet(
-        services: widget.barber.services,
-        title: loc.selectServices ?? 'Select Services',
-        initialSelectedServices: initialSelectedServices,
-        onSelectionUpdate: (List<Service> updatedSelection) {
-          // optional live updates
-        },
-        onConfirm: (List<Service> selected) {
-          // ✅ Close the sheet and return selected services
-          Navigator.pop(sheetContext, selected);
-        },
-      );
-    },
-  );
+        // --- CHANGED: Use the updated ServiceSelectionSheet constructor (single button version) ---
+        // No more onSelectionUpdate or onConfirm callbacks needed.
+        // initialSelectedServices defaults to empty list if not provided or null
+        return ServiceSelectionSheet(
+          services: widget.barber.services,
+          title: '${loc.selectServices} - ${widget.barber.name}',
+          // initialSelectedServices is handled internally by the updated widget or starts empty.
+        );
+      },
+    );
 
-  if (confirmedServices != null && confirmedServices.isNotEmpty) {
-    setState(() {
-      selectedServiceIndices = confirmedServices
-          .map((service) => widget.barber.services.indexOf(service))
-          .where((index) => index != -1)
-          .toSet();
+    print('### _showServiceSelectionSheet: showModalBottomSheet returned. confirmedServices null? ${confirmedServices == null}. isEmpty? ${confirmedServices?.isEmpty}');
 
-      // ✅ Save the slot chosen earlier
-      _selectedTimeSlotForBooking = selectedSlot;
-    });
-
-    // --- CRITICAL FIX FOR SCENARIO B ---
-    if (_selectedTimeSlotForBooking != null && selectedServiceIndices.isNotEmpty) {
-      Future.microtask(() {
-        if (mounted) {
-          // ✅ Call the SAME final confirmation dialog as Scenario A
-          _showFinalBookingConfirmationDialog();
-        } else {
-          debugPrint("Widget unmounted, skipping dialog after service selection.");
-        }
+    // --- KEY CHANGE ---
+    // Handle the result directly here, ensuring state update and dialog trigger are linked correctly.
+    if (confirmedServices != null && confirmedServices.isNotEmpty) {
+      print('### _showServiceSelectionSheet: About to setState');
+      setState(() {
+        // Update selectedServiceIndices based on the services returned
+        selectedServiceIndices = confirmedServices
+            .map((service) => widget.barber.services.indexOf(service))
+            .where((index) => index != -1) // Filter out services not found (shouldn't happen)
+            .toSet();
+        _selectedTimeSlotForBooking = selectedSlot; // Save the slot chosen earlier (passed in, or will be selected next)
+        print('### _showServiceSelectionSheet: setState completed. selectedServiceIndices: $selectedServiceIndices, _selectedTimeSlotForBooking: $_selectedTimeSlotForBooking');
+      });
+      print('### _showServiceSelectionSheet: State set. Scheduling confirmation dialog.');
+      // Use addPostFrameCallback to ensure the widget rebuild from setState is complete
+      // before attempting to show the next dialog.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+         if (mounted) {
+             print('### _showServiceSelectionSheet: addPostFrameCallback executed. Calling _showFinalBookingConfirmationDialog.');
+             _showFinalBookingConfirmationDialog(); // Show confirmation with selected services & slot
+         } else {
+             print("### _showServiceSelectionSheet: Widget not mounted in addPostFrameCallback, skipping dialog.");
+         }
+      });
+      print('### _showServiceSelectionSheet: addPostFrameCallback scheduled.');
+    } else if (confirmedServices != null && confirmedServices.isEmpty) {
+      print('### _showServiceSelectionSheet: User pressed Book without selecting services.');
+      // If the user presses "Book" without selecting services, show a snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(loc.selectAtLeastOneService ??
+                'Please select at least one service.'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      // Reset slot
+      setState(() {
+        _selectedTimeSlotForBooking = null;
+        print('### _showServiceSelectionSheet: _selectedTimeSlotForBooking reset to null due to empty selection');
+      });
+    } else {
+      print('### _showServiceSelectionSheet: User cancelled or sheet was dismissed.');
+      // If the user cancels (by tapping outside or back button), reset slot
+      setState(() {
+        _selectedTimeSlotForBooking = null;
+        print('### _showServiceSelectionSheet: _selectedTimeSlotForBooking reset to null due to cancellation');
       });
     }
-    // --- END OF FIX ---
-  } else {
-    // If the user cancels, reset slot
-    setState(() {
-      _selectedTimeSlotForBooking = null;
-    });
+    // --- END OF KEY CHANGE ---
   }
-}
-
+  // --- END OF UPDATED _showServiceSelectionSheet ---
 
   Widget _buildAboutSection() {
     final loc = AppLocalizations.of(context)!;
@@ -518,7 +599,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             width: 100,
-                            color: mainBlue.withOpacity(0.3),
+                            color: mainBlue.withOpacity(0.2),
                             child: const Icon(Icons.image_not_supported,
                                 color: Colors.white70),
                           );
@@ -612,7 +693,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${service.duration.inMinutes}${loc.mins}',
+                            '${service.duration.inMinutes} ${loc.mins}',
                             style: TextStyle(
                                 fontSize: 13,
                                 color: isDark ? Colors.grey[400]! : Colors.grey[600]),
@@ -664,6 +745,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       loc.saturday.substring(0, 3).toUpperCase() ?? 'SAT',
       loc.sunday.substring(0, 3).toUpperCase() ?? 'SUN',
     ];
+
     List<String> generateAllTimeSlots() {
       final slots = <String>[];
       for (int hour = 9; hour < 23; hour++) {
@@ -672,6 +754,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       }
       return slots;
     }
+
     final allTimeSlots = generateAllTimeSlots();
     const spacing = 10.0;
     final Map<int, Set<String>> dailyAvailability = {
@@ -684,6 +767,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       6: <String>{},
     };
     final availableSlotsForSelectedDay = dailyAvailability[_selectedDayIndex] ?? <String>{};
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
@@ -701,7 +785,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                   onTap: () {
                     setState(() {
                       _selectedDayIndex = index;
-                      _selectedTimeSlotForBooking = null;
+                      _selectedTimeSlotForBooking = null; // Reset slot when day changes
                     });
                   },
                   child: AnimatedContainer(
@@ -792,16 +876,24 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                       return GestureDetector(
                         onTap: isAvailable
                             ? () {
+                                print('### Schedule Tab: Time slot $slot tapped');
                                 setState(() {
                                   _selectedTimeSlotForBooking = slot;
+                                  print('### Schedule Tab: _selectedTimeSlotForBooking set to $slot');
                                 });
-                                // If services are already selected, go to confirmation (Scenario A).
-                                // Otherwise, show the service selection sheet (Scenario B).
+                                // --- MODIFIED LOGIC ---
+                                // Scenario A: Services already selected in Services tab
                                 if (selectedServiceIndices.isNotEmpty) {
+                                  print('### Schedule Tab: Services already selected (Scenario A). Calling _showFinalBookingConfirmationDialog directly.');
                                   _showFinalBookingConfirmationDialog();
-                                } else {
-                                   _showServiceSelectionSheet(slot);
                                 }
+                                // Scenario B: No services selected yet (streamlined flow initiated from Schedule tab)
+                                else {
+                                  print('### Schedule Tab: No services selected (Scenario B). Calling _showServiceSelectionSheet with slot $slot.');
+                                  // Pass the selected slot to _showServiceSelectionSheet
+                                  _showServiceSelectionSheet(slot);
+                                }
+                                // --- END MODIFIED LOGIC ---
                               }
                             : null,
                         child: AnimatedContainer(
@@ -942,6 +1034,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     );
   }
 
+  // --- MODIFIED: _buildReviewsSection to enforce booking policy and dynamic stars ---
   Widget _buildReviewsSection() {
     final loc = AppLocalizations.of(context)!;
     final bool isDark = Theme.of(context).brightness ==
@@ -1005,6 +1098,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                 ),
                 const SizedBox(height: 20),
                 ...reviews.map((review) {
+                  // --- MODIFIED: Dynamic star display for each review ---
                   final rating = (review['rating'] as num).toInt();
                   String reviewDateStr = (review['date'] as String?) ?? '';
                   DateTime parsedDate;
@@ -1057,18 +1151,20 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                                   ],
                                 ),
                               ),
+                              // --- MODIFIED: Display dynamic stars based on review rating ---
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: List.generate(5, (i) {
                                   return Icon(
                                     i < rating
-                                        ? Symbols.star
-                                        : Symbols.star_border,
+                                        ? Symbols.star // Filled star if index < rating
+                                        : Symbols.star_border, // Empty star otherwise
                                     color: Colors.amber,
                                     size: 18,
                                   );
                                 }),
                               ),
+                              // --- END MODIFIED ---
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -1171,6 +1267,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     );
   }
 
+  // --- MODIFIED: _submitReview to enforce booking policy ---
   Future<void> _submitReview(BuildContext context, AppLocalizations loc,
       bool isDark, Color textColor, Color subtitleColor, Color cardBg) async {
     final String reviewText = _reviewController.text.trim();
@@ -1187,12 +1284,18 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
       return;
     }
+
+    // --- MODIFIED: Enforce booking policy ---
     String? currentUserId;
     try {
+      // --- IMPORTANT: Replace with your actual authentication check ---
       currentUserId = _getCurrentUserId();
     } catch (authError) {
       print("Authentication check error: $authError");
+      // Even if auth check fails, we might want to proceed cautiously or show an error.
+      // For now, let's assume unauthenticated users cannot review.
     }
+
     if (currentUserId == null || currentUserId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1207,8 +1310,12 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
       return;
     }
+
     bool hasBookedWithThisBarber = false;
     try {
+      // --- IMPORTANT: Replace with your actual booking history check ---
+      // This should query your backend/database to see if `currentUserId`
+      // has a completed booking with `widget.barber.id`.
       hasBookedWithThisBarber = await _hasUserBookedWithBarber(
           currentUserId, widget.barber.id ?? '');
     } catch (bookingCheckError) {
@@ -1224,8 +1331,9 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
           duration: const Duration(seconds: 3),
         ),
       );
-      return;
+      return; // Stop submission if check fails
     }
+
     if (!hasBookedWithThisBarber) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1238,26 +1346,39 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
           duration: const Duration(seconds: 5),
         ),
       );
-      return;
+      return; // Stop submission if policy violated
     }
+    // --- END MODIFIED: Booking policy enforcement ---
+
+    // --- If policy check passes, proceed with submission ---
     try {
       print(
           'Submitting review: Text=$reviewText, UserId=$currentUserId, BarberId=${widget.barber.id}, Rating=$_userRating');
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (!context.mounted) return; // Check mounted before using context
+      // --- IMPORTANT: Replace with your actual review submission logic ---
+      // This should send the review data to your backend/database.
+      await Future.delayed(const Duration(milliseconds: 500)); // Simulate network call
+      if (!context.mounted) return;
+
+      // --- MODIFIED: Add the new review to the local list ---
+      // In a real app, you'd fetch the updated list from the server.
       final newReview = {
-        "name": loc.you ?? "You",
+        "name": loc.you ?? "You", // Or user's actual name
         "comment": reviewText,
         "date": DateFormat.yMMMMd(Localizations.localeOf(context).toString())
             .format(DateTime.now()),
-        "rating": _userRating,
+        "rating": _userRating, // Use the dynamic rating selected by the user
       };
       setState(() {
-        reviews.insert(0, newReview);
+        reviews.insert(0, newReview); // Add new review to the top
+        // Optionally, update overall barber rating and review count here if fetched
+        // widget.barber.rating = ...;
+        // widget.barber.reviewCount = ...;
       });
+      // --- END MODIFIED ---
+
       _reviewController.clear();
       setState(() {
-        _userRating = 5;
+        _userRating = 5; // Reset star rating selector
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1272,7 +1393,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
     } catch (e) {
       print("Error submitting review: $e");
-      if (!context.mounted) return; // Check mounted before using context
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1286,7 +1407,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
       );
     }
   }
-
+  // --- END MODIFIED: _submitReview ---
 
   @override
   Widget build(BuildContext context) {
@@ -1486,7 +1607,7 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
                   _buildServicesSection(),
                   _buildScheduleSection(),
                   _buildInfoSection(),
-                  _buildReviewsSection(),
+                  _buildReviewsSection(), // Uses the updated section
                 ],
               ),
             ),
@@ -1496,3 +1617,418 @@ class _BarberDetailsScreenState extends State<BarberDetailsScreen>
     );
   }
 }
+
+// --- UPDATED: Enhanced Barber Card Widget with Single Book Button ---
+class _EnhancedBarberCard extends StatelessWidget {
+  final Barber barber;
+  final List<Service> selectedServices;
+  final Function(Service) onServiceToggle;
+  // --- MODIFIED: Single callback for the Book button ---
+  final VoidCallback onBook; // This is now the single "Book" action
+  // --- END MODIFIED ---
+  final VoidCallback onCardTap; // Callback for card tap (sheet selector)
+
+  const _EnhancedBarberCard({
+    required this.barber,
+    required this.selectedServices,
+    required this.onServiceToggle,
+    // --- CHANGED: Accept the single Book callback ---
+    required this.onBook,
+    // --- END CHANGED ---
+    required this.onCardTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color cardBg = isDarkMode ? Colors.grey[850]! : Colors.white;
+    final Color borderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
+    return GestureDetector(
+      // Add tap handler for the entire card (outside the Book button)
+      onTap: onCardTap,
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        // Increased height to prevent overflow and accommodate service items
+        constraints: const BoxConstraints(minHeight: 250), // Adjusted height
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: isDarkMode ? Colors.black26 : Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => BarberDetailsScreen(barber: barber)),
+                );
+              },
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: Image.asset(
+                      barber.image ?? 'assets/images/barbershop2.png',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Icon(Icons.person, color: isDarkMode ? Colors.white70 : Colors.grey),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          barber.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          barber.specialty,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: subtitleColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              loc.services ?? 'Services',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              // Further adjusted height to prevent overflow
+              height: 115, // Reduced height
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: barber.services.length,
+                itemBuilder: (context, index) {
+                  final service = barber.services[index];
+                  final bool isSelected = selectedServices.contains(service);
+                  return GestureDetector(
+                    onTap: () {
+                      onServiceToggle(service);
+                    },
+                    child: Container(
+                      width: 145, // Slightly reduced width
+                      margin: const EdgeInsets.only(right: 10), // Reduced margin
+                      padding: const EdgeInsets.all(7), // Reduced padding
+                      decoration: BoxDecoration(
+                        color: isSelected ? mainBlue.withOpacity(0.1) : cardBg,
+                        borderRadius: BorderRadius.circular(10), // Slightly smaller radius
+                        border: Border.all(
+                          color: isSelected ? mainBlue : borderColor,
+                          width: isSelected ? 2.0 : 1.0, // Slightly thinner border
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6), // Smaller border radius
+                            child: Image.asset(
+                              'assets/images/barbershop1.png',
+                              height: 40, // Reduced image height
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 40,
+                                  width: double.infinity,
+                                  color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                                  child: Icon(Icons.image, size: 16, color: isDarkMode ? Colors.white70 : Colors.grey), // Smaller icon
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 3), // Reduced spacing
+                          // Use Expanded and TextOverflow to handle long service names
+                          Expanded(
+                            child: Text(
+                              service.name,
+                              style: TextStyle(
+                                fontSize: 12, // Smaller font size
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: textColor,
+                              ),
+                              maxLines: 2, // Allow 2 lines
+                              overflow: TextOverflow.ellipsis, // Ellipsis for overflow
+                            ),
+                          ),
+                          const SizedBox(height: 2), // Reduced spacing
+                          Text(
+                            NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: textColor), // Smaller font
+                          ),
+                          Text(
+                            '${service.duration.inMinutes} ${loc.mins}',
+                            style: TextStyle(fontSize: 9, color: subtitleColor), // Smaller font
+                          ),
+                          // Removed checkbox from service items to prevent overflow
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            // --- MODIFIED: Only one Book button ---
+            SizedBox(
+              width: double.infinity, // Full width button
+              child: ElevatedButton(
+                onPressed: onBook, // --- CHANGED: Use the single book callback ---
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: mainBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 12), // Adjusted padding
+                ),
+                child: Text(
+                  loc.book ?? 'Book', // Use 'Book' label
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600), // Smaller font
+                ),
+              ),
+            ),
+            // --- END MODIFIED ---
+          ],
+        ),
+      ),
+    );
+  }
+}
+// --- END UPDATED: Enhanced Barber Card Widget ---
+
+// --- NEW: _MultiSelectServiceSheet with Checkboxes and constraint handling ---
+class _MultiSelectServiceSheet extends StatefulWidget {
+  final List<Service> services;
+  final String title;
+  final List<Service> initialSelectedServices;
+  final Function(List<Service>) onSelectionUpdate; // Callback for real-time updates
+
+  const _MultiSelectServiceSheet({
+    required this.services,
+    required this.title,
+    required this.initialSelectedServices,
+    required this.onSelectionUpdate,
+  });
+
+  @override
+  State<_MultiSelectServiceSheet> createState() => _MultiSelectServiceSheetState();
+}
+
+class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
+  late Set<Service> _selectedServices;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with the services passed from the card state
+    _selectedServices = Set<Service>.from(widget.initialSelectedServices);
+  }
+
+  void _toggleService(Service service) {
+    setState(() {
+      if (_selectedServices.contains(service)) {
+        _selectedServices.remove(service);
+      } else {
+        _selectedServices.add(service);
+      }
+      // Notify the parent screen of the change to apply constraints
+      widget.onSelectionUpdate(_selectedServices.toList());
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color cardBg = isDarkMode ? const Color(0xFF303030) : Colors.white;
+    final Color borderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
+    return Container(
+      padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 16),
+      height: MediaQuery.of(context).size.height * 0.6, // Consistent height
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : cardBg, // Slightly different bg for root container in dark mode
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: mainBlue)),
+          const SizedBox(height: 16),
+          Text(loc.selectService ?? 'Select one or more services to book',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
+          const SizedBox(height: 12),
+          // Use Flexible for dynamic height within constraints
+          Flexible( // Allows the list to grow/shrink within constraints
+            child: ListView.builder(
+              shrinkWrap: true, // Important for ListView inside a Column with mainAxisSize.min
+              itemCount: widget.services.length,
+              itemBuilder: (context, index) {
+                final service = widget.services[index];
+                final isSelected = _selectedServices.contains(service);
+                return GestureDetector(
+                  onTap: () {
+                    _toggleService(service);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isSelected ? mainBlue.withOpacity(0.1) : cardBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? mainBlue : borderColor,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDarkMode ? Colors.black26 : Colors.grey.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              // --- Checkbox for multi-selection ---
+                              Checkbox(
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  if (value != null) {
+                                    _toggleService(service);
+                                  }
+                                },
+                                activeColor: mainBlue, // Blue checkbox when selected
+                                checkColor: Colors.white,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Smaller touch target
+                                visualDensity: const VisualDensity(horizontal: -4, vertical: -4), // Compact size
+                              ),
+                              // --- END Checkbox ---
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      service.name,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    if (service.description != null &&
+                                        service.description!.isNotEmpty)
+                                      Text(
+                                        service.description!,
+                                        style: TextStyle(fontSize: 14, color: subtitleColor),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                                NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
+                                style: const TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text('${service.duration.inMinutes} ${loc.mins}',
+                                style: TextStyle(fontSize: 13, color: subtitleColor)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context), // Just close the sheet
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: mainBlue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: mainBlue),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Text(loc.cancel ?? 'Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: _selectedServices.isEmpty
+                    ? null // Disable if nothing is selected
+                    : () {
+                        // Pass the final selection back to the parent screen
+                        Navigator.pop(context, _selectedServices.toList());
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: mainBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Text(loc.confirm ?? 'Confirm'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+// --- END NEW: _MultiSelectServiceSheet ---
