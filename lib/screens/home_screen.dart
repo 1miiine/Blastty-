@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
-// Import the potentially updated ServiceSelectionSheet widget
 import '../widgets/service_selection_sheet.dart';
 import '../models/barber_model.dart';
 import '../l10n/app_localizations.dart';
@@ -78,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // --- UPDATED METHOD: Handle Book with Single Service Selection and Direct Navigation ---
+  // --- MODIFIED: Handle Book with Single Service Selection and Direct Navigation to Schedule Tab ---
   Future<void> _handleBook(BuildContext context, Barber barber) async {
     final loc = AppLocalizations.of(context)!;
     if (barber.services.isEmpty) {
@@ -96,7 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Show the MODIFIED service selection sheet with a single "Book" button
-    // This assumes ServiceSelectionSheet has been updated to return List<Service>? on Book press
     final List<Service>? selectedServices = await showModalBottomSheet<List<Service>?>(
       context: context,
       isScrollControlled: true,
@@ -116,36 +114,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Handle the result from the sheet
     if (selectedServices != null && selectedServices.isNotEmpty && context.mounted) {
-      // Navigate directly to the BarberDetailsScreen's Schedule tab
-      // Pass the selected services via the existing constructor
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BarberDetailsScreen(
-            barber: barber,
-            // We cannot pass initialSelectedServices or navigateToSchedule directly
-            // because the constructor in Pasted_Text_1757898297978.txt doesn't accept them.
-            // We need to adapt the flow within BarberDetailsScreen or modify its constructor.
-            // For now, navigate normally. The logic to pre-select services and go to schedule
-            // needs to be handled inside BarberDetailsScreen or by modifying its constructor.
-          ),
-        ),
-      );
-      // To achieve the full desired flow, BarberDetailsScreen's constructor MUST be modified
-      // to accept initialSelectedServices and navigateToSchedule.
-      // Example of what the call would look like IF the constructor accepted them:
-      /*
+      // --- CRITICAL CHANGE: Navigate directly to BarberDetailsScreen with parameters ---
+      // --- This assumes BarberDetailsScreen constructor accepts initialSelectedServices and navigateToSchedule ---
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => BarberDetailsScreen(
             barber: barber,
             initialSelectedServices: selectedServices, // Pass selected services
-            navigateToSchedule: true, // Flag to indicate navigation to schedule
+            navigateToSchedule: true, // Instruct to navigate to Schedule tab
           ),
         ),
       );
-      */
+      // --- END OF CRITICAL CHANGE ---
     } else if (selectedServices != null && selectedServices.isEmpty && context.mounted) {
       // User pressed Book without selecting services (if your sheet allows this state)
       ScaffoldMessenger.of(context).showSnackBar(
@@ -160,7 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     // If selectedServices is null, the user cancelled the sheet, so do nothing.
   }
-
 
   //--- ADDITION: Function to scroll to the "For You" section---
   void _scrollToForYouSection() {

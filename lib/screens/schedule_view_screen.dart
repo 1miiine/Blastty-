@@ -95,9 +95,8 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
               // --- END STRICTER LOGIC ---
             });
           },
-          // --- NEW: Pass the booking action handlers to the sheet ---
-          onBookNow: () => _proceedWithBooking(context, barber, true),
-          onBookLater: () => _proceedWithBooking(context, barber, false),
+          // --- NEW: Single handler for booking ---
+          onBook: () => _proceedWithBooking(context, barber),
           // --- END NEW ---
         );
       },
@@ -120,7 +119,7 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
   }
 
   // --- NEW: Proceed with the actual booking logic ---
-  Future<void> _proceedWithBooking(BuildContext context, Barber barber, bool isBookingNow) async {
+  Future<void> _proceedWithBooking(BuildContext context, Barber barber) async {
     final loc = AppLocalizations.of(context)!;
     final List<Service> selectedServices = _getSelectedServicesForBarber(barber);
 
@@ -143,18 +142,16 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
     Navigator.pop(context); // This pops the _MultiSelectServiceSheet
 
     // Show the booking confirmation dialog (similar to BarberListScreen)
-    _showBookingConfirmationDialog(context, barber, selectedServices, loc, isBookingNow: isBookingNow);
+    _showBookingConfirmationDialog(context, barber, selectedServices, loc);
   }
 
   // --- NEW: Show booking confirmation dialog ---
   void _showBookingConfirmationDialog(
-      BuildContext context, Barber barber, List<Service> selectedServices, AppLocalizations loc, {required bool isBookingNow}) {
+      BuildContext context, Barber barber, List<Service> selectedServices, AppLocalizations loc) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color dialogBgColor = isDarkMode ? Colors.grey[850]! : Colors.white;
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
     final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
-    DateTime? selectedDateForLater; // For book later
-    TimeOfDay? selectedTimeForLater; // For book later
 
     showDialog(
       context: context,
@@ -164,7 +161,7 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
             return AlertDialog(
               backgroundColor: dialogBgColor,
               contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-              title: Text(isBookingNow ? '${loc.bookNow} - ${barber.name}' : '${loc.bookLater} - ${barber.name}',
+              title: Text('${loc.book} - ${barber.name}',
                           style: TextStyle(color: textColor)),
               content: SingleChildScrollView(
                 child: Column(
@@ -174,108 +171,6 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
                     Text('${loc.withText} ${barber.name}',
                         style: TextStyle(fontStyle: FontStyle.italic, color: subtitleColor)),
                     const SizedBox(height: 20),
-                    if (!isBookingNow) ...[ // Show date/time pickers only for Book Later
-                      Text(loc.selectDateTime ?? 'Select Date & Time:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(DateTime.now().year + 1),
-                            builder: (context, child) {
-                              return Theme(
-                                  data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update dialog state
-                              selectedDateForLater = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_month, color: Colors.white),
-                        label: Text(
-                          selectedDateForLater == null
-                              ? (loc.selectDate ?? 'Select Date')
-                              : "${selectedDateForLater!.day}/${selectedDateForLater!.month}/${selectedDateForLater!.year}",
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                            builder: (context, child) {
-                              return Theme(
-                                  data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update dialog state
-                              selectedTimeForLater = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.access_time, color: Colors.white),
-                        label: Text(
-                          selectedTimeForLater == null
-                              ? (loc.selectTime ?? 'Select Time')
-                              : selectedTimeForLater!.format(context),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
                     Text(loc.selectedServices, style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     ConstrainedBox(
@@ -331,37 +226,35 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
                   child: Text(loc.cancel ?? 'Cancel', style: TextStyle(color: isDarkMode ? Colors.white70 : mainBlue)),
                 ),
                 ElevatedButton(
-                  onPressed: (!isBookingNow && selectedDateForLater != null && selectedTimeForLater != null) || isBookingNow
-                      ? () {
-                          Navigator.pop(context); // Close confirmation dialog
+                  onPressed: () {
+                      Navigator.pop(context); // Close confirmation dialog
 
-                          // Show success snackbar
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  loc.bookingSent ??
-                                      'Your booking request was sent. You will receive a confirmation soon.',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                backgroundColor: mainBlue,
-                                duration: const Duration(seconds: 3),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                      // Show success snackbar
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              loc.bookingSent ??
+                                  'Your booking request was sent. You will receive a confirmation soon.',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: mainBlue,
+                            duration: const Duration(seconds: 3),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
 
-                            // Navigate to bookings management screen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BookingsManagementScreen(snackbarMessage: '',),
-                              ),
-                            );
-                          }
-                        }
-                      : null,
+                        // Navigate to bookings management screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BookingsManagementScreen(snackbarMessage: '',),
+                          ),
+                        );
+                      }
+                  },
                   style: ElevatedButton.styleFrom(backgroundColor: mainBlue, foregroundColor: Colors.white),
-                  child: Text(isBookingNow ? loc.bookNow : loc.bookLater),
+                  child: Text(loc.book),
                 ),
               ],
             );
@@ -711,27 +604,22 @@ class _ScheduleViewScreenState extends State<ScheduleViewScreen> {
   }
 }
 
-// --- NEW: Multi-Select Service Sheet (Copied and modified from BarberListScreen) ---
-// This is the same _MultiSelectServiceSheet from the knowledge base file, with added booking buttons.
+// --- NEW: Multi-Select Service Sheet with single Book button ---
 class _MultiSelectServiceSheet extends StatefulWidget {
   final List<Service> services;
   final String title;
   final List<Service> initialSelectedServices;
   final Function(List<Service>) onSelectionUpdate;
-  // --- NEW: Handlers for the booking actions ---
-  final VoidCallback onBookNow;
-  final VoidCallback onBookLater;
-  // --- END NEW ---
+  // --- NEW: Single handler for booking ---
+  final VoidCallback onBook;
 
   const _MultiSelectServiceSheet({
     required this.services,
     required this.title,
     required this.initialSelectedServices,
     required this.onSelectionUpdate,
-    // --- NEW: Constructor parameters ---
-    required this.onBookNow,
-    required this.onBookLater,
-    // --- END NEW ---
+    // --- NEW: Constructor parameter ---
+    required this.onBook,
   });
 
   @override
@@ -869,55 +757,27 @@ class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          // --- MODIFIED: Replace Cancel/Confirm with Book Now/Book Later ---
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Book Later Button (Outlined)
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4, // Responsive width
-                child: OutlinedButton(
-                  onPressed: _selectedServices.isEmpty
-                      ? null // Disable if no services selected
-                      : widget.onBookLater, // Call the provided handler
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: mainBlue, width: 2.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                     // Consistent padding
-                  ),
-                  child: Text(loc.bookLater ?? 'Book Later',
-                      style: const TextStyle(
-                          fontSize: 14, // Slightly smaller font
-                          fontWeight: FontWeight.w600,
-                          color: mainBlue)),
+          // --- MODIFIED: Replace Book Now/Book Later with single Book button ---
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _selectedServices.isEmpty
+                  ? null // Disable if no services selected
+                  : widget.onBook, // Call the provided handler
+              style: ElevatedButton.styleFrom(
+                backgroundColor: mainBlue, // Blue background
+                foregroundColor: Colors.white, // White text
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                 // Consistent padding
               ),
-              // Book Now Button (Filled)
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4, // Responsive width
-                child: ElevatedButton(
-                  onPressed: _selectedServices.isEmpty
-                      ? null // Disable if no services selected
-                      : widget.onBookNow, // Call the provided handler
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainBlue, // Blue background
-                    foregroundColor: Colors.white, // White text
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                     // Consistent padding
-                  ),
-                  child: Text(loc.bookNow ?? 'Book Now',
-                      style: const TextStyle(
-                          fontSize: 14, // Slightly smaller font
-                          fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ],
+              child: Text(loc.book,
+                  style: const TextStyle(
+                      fontSize: 14, // Slightly smaller font
+                      fontWeight: FontWeight.w600)),
+            ),
           ),
           // --- END MODIFIED ---
           const SizedBox(height: 8),
@@ -934,7 +794,7 @@ final List<Barber> sampleBarbers = [
     name: 'Youssef Barber',
     specialty: 'Fade & Beard',
     rating: 4.8,
-    image: 'https://i.imgur.com/BoN9kdC.png',
+    image: 'https://i.imgur.com/BoN9kdC.png  ',
     location: 'Casablanca',
     distance: '1.2km',
     priceLevel: 2,
@@ -956,7 +816,7 @@ final List<Barber> sampleBarbers = [
     name: 'Ali Style',
     specialty: 'Classic Cuts',
     rating: 4.5,
-    image: 'https://i.imgur.com/QCNbOAo.png',
+    image: 'https://i.imgur.com/QCNbOAo.png  ',
     location: 'Rabat',
     distance: '3.5km',
     priceLevel: 3,
@@ -978,7 +838,7 @@ final List<Barber> sampleBarbers = [
     name: 'Hassan Pro',
     specialty: 'Modern Styles',
     rating: 4.7,
-    image: 'https://i.imgur.com/BoN9kdC.png',
+    image: 'https://i.imgur.com/BoN9kdC.png  ',
     location: 'Fès',
     distance: '2.0km',
     priceLevel: 2,
@@ -1000,7 +860,7 @@ final List<Barber> sampleBarbers = [
     name: 'Ilyas Touch',
     specialty: 'Scissor Expert',
     rating: 4.6,
-    image: 'https://i.imgur.com/QCNbOAo.png',
+    image: 'https://i.imgur.com/QCNbOAo.png  ',
     location: 'Marrakech',
     distance: '4.3km',
     priceLevel: 3,

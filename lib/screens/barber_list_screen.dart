@@ -5,15 +5,10 @@ import '../models/barber_model.dart';
 import '../models/service.dart';
 import '../l10n/app_localizations.dart';
 import 'barber_details_screen.dart';
-import 'bookings_management_screen.dart';
-import 'package:intl/intl.dart';
-// --- NEW: Import the custom ResponsiveSliverAppBar ---
-import '../widgets/shared/responsive_sliver_app_bar.dart'; // Adjust path if necessary
-// --- END NEW ---
-
+import '../widgets/service_selection_sheet.dart'; 
+import '../widgets/shared/responsive_sliver_app_bar.dart';
 const Color mainBlue = Color(0xFF3434C6);
 
-// CONVERTED TO STATEFULWIDGET TO MANAGE FILTERS AND SELECTIONS
 class BarberListScreen extends StatefulWidget {
   final List<Barber> barbers;
   final String title;
@@ -29,28 +24,9 @@ class BarberListScreen extends StatefulWidget {
 }
 
 class _BarberListScreenState extends State<BarberListScreen> {
-  // STATE VARIABLES FOR FILTERS
   final List<String> selectedFilters = [];
   DateTime? selectedDate;
   String? selectedLocation;
-
-  // --- NEW: State for Selected Services per Barber ---
-  final Map<String, List<Service>> _cardSelectedServices = {};
-
-  // --- NEW: Helper to get selected services for a specific barber ---
-  List<Service> _getSelectedServicesForBarber(Barber barber) {
-    return _cardSelectedServices.putIfAbsent(barber.id ?? '', () => []);
-  }
-
-  // --- NEW: Helper to clear selections for all barbers except one ---
-  void _clearSelectionsForOtherBarbers(String currentBarberId) {
-    _cardSelectedServices.keys
-        .where((barberId) => barberId != currentBarberId)
-        .forEach((barberId) {
-      _cardSelectedServices[barberId] = [];
-    });
-  }
-  // --- END NEW ---
 
   // LOGIC TO TOGGLE A FILTER CHIP
   void toggleFilter(String key) {
@@ -75,7 +51,7 @@ class _BarberListScreenState extends State<BarberListScreen> {
       lastDate: DateTime(now.year + 2),
       builder: (context, child) {
         return Theme(
-           data: isDark
+          data: isDark
               ? ThemeData.dark().copyWith(
                   colorScheme: ColorScheme.dark(
                     primary: mainBlue,
@@ -88,7 +64,7 @@ class _BarberListScreenState extends State<BarberListScreen> {
                       foregroundColor: mainBlue,
                     ),
                   ),
-                  dialogTheme: DialogThemeData(backgroundColor: Colors.grey[900]),
+                  dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
                 )
               : ThemeData.light().copyWith(
                   colorScheme: const ColorScheme.light(
@@ -324,6 +300,7 @@ class _BarberListScreenState extends State<BarberListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Use the barbers passed in, or fall back to simpleBarbers if empty
     final List<Barber> displayBarbers = widget.barbers.isNotEmpty ? widget.barbers : Barber.simpleBarbers;
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -338,22 +315,13 @@ class _BarberListScreenState extends State<BarberListScreen> {
     final localized = AppLocalizations.of(context)!;
 
     return Scaffold(
-      // --- MODIFIED: Remove the standard AppBar ---
-      // appBar: AppBar(
-      //   backgroundColor: mainBlue,
-      //   foregroundColor: Colors.white,
-      //   title: Text(widget.title),
-      // ),
-      // --- END MODIFIED ---
       body: CustomScrollView(
         slivers: [
           // --- NEW: Add the ResponsiveSliverAppBar ---
           ResponsiveSliverAppBar(
-            title: widget.title, // Use the title passed to the screen
+            title: widget.title,
             backgroundColor: mainBlue,
-            // The ResponsiveSliverAppBar will automatically imply the leading back button
-            automaticallyImplyLeading: true, // Ensure back button is shown
-            // No custom actions needed for this screen based on the original AppBar
+            automaticallyImplyLeading: true,
           ),
           // --- END NEW ---
 
@@ -361,7 +329,6 @@ class _BarberListScreenState extends State<BarberListScreen> {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                // ADDED FILTER UI
                 buildSearchBar(),
                 buildWhereWhenBar(),
                 SingleChildScrollView(
@@ -395,7 +362,6 @@ class _BarberListScreenState extends State<BarberListScreen> {
               final isAvailable = index % 3 != 0;
               final isVIP = index % 4 == 0;
 
-              // Add padding to the last item to ensure it's not cut off
               return Padding(
                 padding: EdgeInsets.only(
                   left: 16,
@@ -421,7 +387,9 @@ class _BarberListScreenState extends State<BarberListScreen> {
                       ),
                     );
                   },
+                  // --- MODIFIED: Pass the updated _handleBook function ---
                   onBook: () => _handleBook(context, barber),
+                  // --- END MODIFIED ---
                 ),
               );
             },
@@ -432,316 +400,71 @@ class _BarberListScreenState extends State<BarberListScreen> {
     );
   }
 
-  // --- NEW: Handle Book button press by showing the service selection sheet ---
+  // --- NEW: Handle Book with Single Service Selection and Direct Navigation ---
   Future<void> _handleBook(BuildContext context, Barber barber) async {
     final loc = AppLocalizations.of(context)!;
+    if (barber.services.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${loc.error}: ${loc.barberHasNoServicesDefined}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
-    // Show the service selection sheet
-    final List<Service>? selectedServicesFromSheet = await showModalBottomSheet<List<Service>?>(
+    // Show the MODIFIED service selection sheet with a single "Book" button
+    final List<Service>? selectedServices = await showModalBottomSheet<List<Service>?>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
-        return _MultiSelectServiceSheet(
+        // Assuming ServiceSelectionSheet constructor is like this after your update:
+        // ServiceSelectionSheet({Key? key, required this.services, required this.title});
+        return ServiceSelectionSheet(
           services: barber.services,
-          title: '${loc.selectServices} - ${barber.name}',
-          initialSelectedServices: _getSelectedServicesForBarber(barber),
-          onSelectionUpdate: (updatedSelection) {
-            // Apply the stricter single-barber constraint logic when selection changes in the sheet
-            setState(() {
-              final String currentBarberId = barber.id ?? '';
-              // --- STRICTER LOGIC: Always check and clear other barbers' selections ---
-              bool hasSelectionsForOtherBarbers = _cardSelectedServices.keys.any((barberId) =>
-                  barberId != currentBarberId && _cardSelectedServices[barberId]!.isNotEmpty);
-              if (hasSelectionsForOtherBarbers) {
-                _clearSelectionsForOtherBarbers(currentBarberId);
-              }
-              _cardSelectedServices[currentBarberId] = updatedSelection;
-              // --- END STRICTER LOGIC ---
-            });
-          },
-          // --- NEW: Pass the booking action handlers to the sheet ---
-          onBookNow: () => _proceedWithBooking(context, barber, true),
-          onBookLater: () => _proceedWithBooking(context, barber, false),
-          // --- END NEW ---
+          title: '${loc.book} - ${barber.name}',
+          // Pass any other required parameters based on your updated widget
         );
       },
     );
 
-    // Handle the result from the sheet (if needed, e.g., if user confirms selection)
-    if (selectedServicesFromSheet != null) {
-      // Optionally update the state if the sheet returns a final confirmed selection
-      // Though the booking logic is now inside the sheet, this might still be useful
-      // for immediate UI updates or if the sheet logic changes.
-      setState(() {
-         final String currentBarberId = barber.id ?? '';
-         // Apply the same constraint logic
-         bool hasSelectionsForOtherBarbers = _cardSelectedServices.keys.any((barberId) =>
-             barberId != currentBarberId && _cardSelectedServices[barberId]!.isNotEmpty);
-         if (hasSelectionsForOtherBarbers) {
-           _clearSelectionsForOtherBarbers(currentBarberId);
-         }
-         _cardSelectedServices[currentBarberId] = selectedServicesFromSheet;
-      });
+    // Handle the result from the sheet
+    if (selectedServices != null && selectedServices.isNotEmpty && context.mounted) {
+      // --- CRITICAL CHANGE: Navigate directly to BarberDetailsScreen with parameters ---
+      // --- This assumes BarberDetailsScreen constructor accepts initialSelectedServices and navigateToSchedule ---
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BarberDetailsScreen(
+            barber: barber,
+            initialSelectedServices: selectedServices, // Pass selected services
+            navigateToSchedule: true, // Instruct to navigate to Schedule tab
+          ),
+        ),
+      );
+      // --- END OF CRITICAL CHANGE ---
+    } else if (selectedServices != null && selectedServices.isEmpty && context.mounted) {
+      // User pressed Book without selecting services (if your sheet allows this state)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.selectAtLeastOneService ??
+              'Please select at least one service.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
+    // If selectedServices is null, the user cancelled the sheet, so do nothing.
   }
-  // --- END NEW ---
-
-  // --- NEW: Proceed with the actual booking logic ---
-  Future<void> _proceedWithBooking(BuildContext context, Barber barber, bool isBookingNow) async {
-    final loc = AppLocalizations.of(context)!;
-    final List<Service> selectedServices = _getSelectedServicesForBarber(barber);
-
-    if (selectedServices.isEmpty) {
-        if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(loc.selectAtLeastOneService ??
-                    'Please select at least one service.'),
-                backgroundColor: Colors.orange,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 2),
-            ),
-            );
-        }
-        return; // Don't proceed if no services are selected
-    }
-
-    // Close the sheet first
-    Navigator.pop(context); // This pops the _MultiSelectServiceSheet
-
-    // Show the booking confirmation dialog (reusing logic from the provided file)
-    _showBookingConfirmationDialog(context, barber, selectedServices, loc, isBookingNow: isBookingNow);
-  }
-  // --- END NEW ---
-
-  // --- MODIFIED: Updated _showBookingConfirmationDialog to accept services and booking type ---
-  void _showBookingConfirmationDialog(
-      BuildContext context, Barber barber, List<Service> selectedServices, AppLocalizations loc, {required bool isBookingNow}) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color dialogBgColor = isDarkMode ? Colors.grey[850]! : Colors.white;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
-    DateTime? selectedDateForLater; // For book later
-    TimeOfDay? selectedTimeForLater; // For book later
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) { // Use StatefulBuilder for date/time pickers in dialog
-            return AlertDialog(
-              backgroundColor: dialogBgColor,
-              contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-              title: Text(isBookingNow ? '${loc.bookNow} - ${barber.name}' : '${loc.bookLater} - ${barber.name}',
-                          style: TextStyle(color: textColor)),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${loc.withText} ${barber.name}',
-                        style: TextStyle(fontStyle: FontStyle.italic, color: subtitleColor)),
-                    const SizedBox(height: 20),
-                    if (!isBookingNow) ...[ // Show date/time pickers only for Book Later
-                      Text(loc.selectDateTime ?? 'Select Date & Time:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(DateTime.now().year + 1),
-                            builder: (context, child) {
-                              return Theme(
-                                  data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update dialog state
-                              selectedDateForLater = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_month, color: Colors.white),
-                        label: Text(
-                          selectedDateForLater == null
-                              ? (loc.selectDate ?? 'Select Date')
-                              : "${selectedDateForLater!.day}/${selectedDateForLater!.month}/${selectedDateForLater!.year}",
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                            builder: (context, child) {
-                              return Theme(
-                                  data: isDarkMode
-                                    ? ThemeData.dark().copyWith(
-                                        colorScheme: const ColorScheme.dark(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.white,
-                                          surface: Color(0xFF303030),
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF303030)),
-                                      )
-                                    : ThemeData.light().copyWith(
-                                        colorScheme: const ColorScheme.light(
-                                          primary: mainBlue,
-                                          onPrimary: Colors.white,
-                                          onSurface: Colors.black87,
-                                        ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
-                                      ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null && context.mounted) {
-                            setState(() { // Update dialog state
-                              selectedTimeForLater = picked;
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.access_time, color: Colors.white),
-                        label: Text(
-                          selectedTimeForLater == null
-                              ? (loc.selectTime ?? 'Select Time')
-                              : selectedTimeForLater!.format(context),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    Text(loc.selectedServices, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.3,
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: selectedServices.map((service) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(service.name,
-                                                style: TextStyle(color: textColor),
-                                                overflow: TextOverflow.ellipsis),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price)} - ${service.duration.inMinutes} ${loc.mins}',
-                                    style: TextStyle(color: subtitleColor, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(
-                          '${NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(selectedServices.fold<double>(0, (sum, item) => sum + item.price))} - ${selectedServices.fold<int>(0, (sum, item) => sum + item.duration.inMinutes)} ${loc.mins}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: mainBlue),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(loc.cancel ?? 'Cancel', style: TextStyle(color: isDarkMode ? Colors.white70 : mainBlue)),
-                ),
-                ElevatedButton(
-                  onPressed: (!isBookingNow && selectedDateForLater != null && selectedTimeForLater != null) || isBookingNow
-                      ? () {
-                          Navigator.pop(context); // Close confirmation dialog
-
-                          // Show success snackbar
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  loc.bookingSent ??
-                                      'Your booking request was sent. You will receive a confirmation soon.',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                backgroundColor: mainBlue,
-                                duration: const Duration(seconds: 3),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-
-                            // Navigate to bookings management screen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BookingsManagementScreen(snackbarMessage: '',),
-                              ),
-                            );
-                          }
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: mainBlue, foregroundColor: Colors.white),
-                  child: Text(isBookingNow ? loc.bookNow : loc.bookLater),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-  // --- END MODIFIED ---
+  // --- END OF NEW ---
 }
 
 // Extracted BarberCard widget
@@ -756,7 +479,9 @@ class BarberCard extends StatelessWidget {
   final bool isDarkMode;
   final AppLocalizations localized;
   final VoidCallback onTap;
-  final VoidCallback onBook; // Updated type
+  // --- MODIFIED: Updated type to VoidCallback ---
+  final VoidCallback onBook;
+  // --- END MODIFIED ---
   final int index;
 
   const BarberCard({
@@ -771,7 +496,9 @@ class BarberCard extends StatelessWidget {
     required this.isDarkMode,
     required this.localized,
     required this.onTap,
-    required this.onBook, // Updated parameter
+    // --- MODIFIED: Updated parameter type ---
+    required this.onBook,
+    // --- END MODIFIED ---
     required this.index,
   });
 
@@ -819,7 +546,9 @@ class BarberCard extends StatelessWidget {
                   subtitleColor: subtitleColor,
                   localized: localized,
                   isDarkMode: isDarkMode,
-                  onBook: onBook, // Pass the updated handler
+                  // --- MODIFIED: Pass the updated handler ---
+                  onBook: onBook,
+                  // --- END MODIFIED ---
                 ),
               ],
             ),
@@ -1131,7 +860,9 @@ class BarberInfoSection extends StatelessWidget {
   final Color subtitleColor;
   final AppLocalizations localized;
   final bool isDarkMode;
-  final VoidCallback onBook; // Updated type
+  // --- MODIFIED: Updated type to VoidCallback ---
+  final VoidCallback onBook;
+  // --- END MODIFIED ---
 
   const BarberInfoSection({
     super.key,
@@ -1140,7 +871,9 @@ class BarberInfoSection extends StatelessWidget {
     required this.subtitleColor,
     required this.localized,
     required this.isDarkMode,
-    required this.onBook, // Updated parameter
+    // --- MODIFIED: Updated parameter type ---
+    required this.onBook,
+    // --- END MODIFIED ---
   });
 
   @override
@@ -1248,7 +981,9 @@ class BarberInfoSection extends StatelessWidget {
               SizedBox(
                 height: 36,
                 child: ElevatedButton(
-                  onPressed: onBook, // Use the updated handler
+                  // --- MODIFIED: Use the updated handler ---
+                  onPressed: onBook,
+                  // --- END MODIFIED ---
                   style: ElevatedButton.styleFrom(
                     backgroundColor: mainBlue,
                     foregroundColor: Colors.white,
@@ -1338,7 +1073,6 @@ class BarberTicket extends StatelessWidget {
     final Color ticketColor = _getTicketColor(barber, index);
 
     return Transform.rotate(
-
       angle: 0.785, // 45 degrees upward (positive angle)
       child: Container(
         width: 100, // Increased width to accommodate longer text
@@ -1431,220 +1165,3 @@ class BarberTicket extends StatelessWidget {
     return 9.0; // Normal font size
   }
 }
-
-// --- NEW: Multi-Select Service Sheet (Copied and modified from provided file) ---
-// This is the same _MultiSelectServiceSheet from the knowledge base file, with added booking buttons.
-class _MultiSelectServiceSheet extends StatefulWidget {
-  final List<Service> services;
-  final String title;
-  final List<Service> initialSelectedServices;
-  final Function(List<Service>) onSelectionUpdate;
-  // --- NEW: Handlers for the booking actions ---
-  final VoidCallback onBookNow;
-  final VoidCallback onBookLater;
-  // --- END NEW ---
-
-  const _MultiSelectServiceSheet({
-    required this.services,
-    required this.title,
-    required this.initialSelectedServices,
-    required this.onSelectionUpdate,
-    // --- NEW: Constructor parameters ---
-    required this.onBookNow,
-    required this.onBookLater,
-    // --- END NEW ---
-  });
-
-  @override
-  State<_MultiSelectServiceSheet> createState() => _MultiSelectServiceSheetState();
-}
-
-class _MultiSelectServiceSheetState extends State<_MultiSelectServiceSheet> {
-  late Set<Service> _selectedServices;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedServices = Set<Service>.from(widget.initialSelectedServices);
-  }
-
-  void _toggleService(Service service) {
-    setState(() {
-      if (_selectedServices.contains(service)) {
-        _selectedServices.remove(service);
-      } else {
-        _selectedServices.add(service);
-      }
-      widget.onSelectionUpdate(_selectedServices.toList());
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color cardBg = isDarkMode ? const Color(0xFF303030) : Colors.white;
-    final Color borderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color? subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600];
-    return Container(
-      padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 16),
-      height: MediaQuery.of(context).size.height * 0.7, // Slightly taller to accommodate buttons
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: mainBlue)),
-          const SizedBox(height: 16),
-          Text(loc.selectService ?? 'Select one or more services to book',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
-          const SizedBox(height: 12),
-          Expanded( // Make the list scrollable
-            child: ListView.builder(
-              itemCount: widget.services.length,
-              itemBuilder: (context, index) {
-                final service = widget.services[index];
-                final isSelected = _selectedServices.contains(service);
-                return GestureDetector(
-                  onTap: () {
-                    _toggleService(service);
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isSelected ? mainBlue.withOpacity(0.1) : cardBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? mainBlue : borderColor,
-                        width: isSelected ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDarkMode ? Colors.black26 : Colors.grey.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              // Checkbox for selection
-                              Checkbox(
-                                value: isSelected,
-                                onChanged: (bool? value) {
-                                  if (value == true) {
-                                    _toggleService(service);
-                                  } else if (value == false) {
-                                    _toggleService(service);
-                                  }
-                                },
-                                activeColor: mainBlue,
-                                checkColor: Colors.white,
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(service.name,
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                            color: textColor)),
-                                    if (service.description != null &&
-                                        service.description!.isNotEmpty)
-                                      Text(service.description!,
-                                          style: TextStyle(fontSize: 14, color: subtitleColor)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                                NumberFormat.currency(locale: loc.localeName ?? 'en', symbol: loc.mad ?? 'MAD', decimalDigits: 2).format(service.price),
-                                style: const TextStyle(fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text('${service.duration.inMinutes} ${loc.mins}',
-                                style: TextStyle(fontSize: 13, color: subtitleColor)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          // --- MODIFIED: Replace Cancel/Confirm with Book Now/Book Later ---
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Book Later Button (Outlined)
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4, // Responsive width
-                child: OutlinedButton(
-                  onPressed: _selectedServices.isEmpty
-                      ? null // Disable if no services selected
-                      : widget.onBookLater, // Call the provided handler
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: mainBlue, width: 2.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                     // Consistent padding
-                  ),
-                  child: Text(loc.bookLater ?? 'Book Later',
-                      style: const TextStyle(
-                          fontSize: 14, // Slightly smaller font
-                          fontWeight: FontWeight.w600,
-                          color: mainBlue)),
-                ),
-              ),
-              // Book Now Button (Filled)
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4, // Responsive width
-                child: ElevatedButton(
-                  onPressed: _selectedServices.isEmpty
-                      ? null // Disable if no services selected
-                      : widget.onBookNow, // Call the provided handler
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainBlue, // Blue background
-                    foregroundColor: Colors.white, // White text
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                     // Consistent padding
-                  ),
-                  child: Text(loc.bookNow ?? 'Book Now',
-                      style: const TextStyle(
-                          fontSize: 14, // Slightly smaller font
-                          fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ],
-          ),
-          // --- END MODIFIED ---
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}
-// --- END NEW: Multi-Select Service Sheet ---
