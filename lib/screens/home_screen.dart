@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
+<<<<<<< HEAD
+=======
+import '../widgets/service_selection_sheet.dart';
+>>>>>>> a14f6096d0f917c207659f4d8b95a29d8dae41ee
 import '../models/barber_model.dart';
 import '../l10n/app_localizations.dart';
 import 'barber_details_screen.dart';
@@ -78,8 +82,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+<<<<<<< HEAD
   // --- NEW METHOD: Handle Book Now with Service Selection ---
   Future<void> _handleBookNow(BuildContext context, Barber barber) async {
+=======
+  // --- MODIFIED: Handle Book with Single Service Selection and Direct Navigation to Schedule Tab ---
+  Future<void> _handleBook(BuildContext context, Barber barber) async {
+>>>>>>> a14f6096d0f917c207659f4d8b95a29d8dae41ee
     final loc = AppLocalizations.of(context)!;
     if (barber.services.isEmpty) {
       if (context.mounted) {
@@ -95,8 +104,13 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+<<<<<<< HEAD
     // Show the service selection sheet
     final result = await showModalBottomSheet(
+=======
+    // Show the MODIFIED service selection sheet with a single "Book" button
+    final List<Service>? selectedServices = await showModalBottomSheet<List<Service>?>(
+>>>>>>> a14f6096d0f917c207659f4d8b95a29d8dae41ee
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -114,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     // Handle the result from the sheet
+<<<<<<< HEAD
     if (result != null && context.mounted) {
       final List<Service> selectedServices = result['services'];
       final bool isBookingNow = result['isNow'];
@@ -132,9 +147,37 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       _showBookingConfirmationDialog(context, barber, selectedServices, loc, isBookingNow: isBookingNow);
+=======
+    if (selectedServices != null && selectedServices.isNotEmpty && context.mounted) {
+      // --- CRITICAL CHANGE: Navigate directly to BarberDetailsScreen with parameters ---
+      // --- This assumes BarberDetailsScreen constructor accepts initialSelectedServices and navigateToSchedule ---
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BarberDetailsScreen(
+            barber: barber,
+            initialSelectedServices: selectedServices, // Pass selected services
+            navigateToSchedule: true, // Instruct to navigate to Schedule tab
+          ),
+        ),
+      );
+      // --- END OF CRITICAL CHANGE ---
+    } else if (selectedServices != null && selectedServices.isEmpty && context.mounted) {
+      // User pressed Book without selecting services (if your sheet allows this state)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.selectAtLeastOneService ??
+              'Please select at least one service.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+>>>>>>> a14f6096d0f917c207659f4d8b95a29d8dae41ee
     }
   }
 
+<<<<<<< HEAD
   // --- NEW HELPER: Show Confirmation Dialog ---
   void _showBookingConfirmationDialog(
     BuildContext context,
@@ -365,6 +408,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+=======
+>>>>>>> a14f6096d0f917c207659f4d8b95a29d8dae41ee
   //--- ADDITION: Function to scroll to the "For You" section---
   void _scrollToForYouSection() {
     final keyContext = _forYouSectionKey.currentContext;

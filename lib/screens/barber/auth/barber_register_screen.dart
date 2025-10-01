@@ -1,21 +1,18 @@
 // lib/screens/barber/auth/barber_register_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart'; // <-- Import for TapGestureRecognizer
+import 'package:flutter/gestures.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:geolocator/geolocator.dart'; // For geolocation
-import 'package:permission_handler/permission_handler.dart'; // For permission handling
-import 'package:flutter/services.dart'; // For TextInputFormatter
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 import '../../../l10n/app_localizations.dart';
 import 'barber_login_screen.dart';
 import '../../../widgets/language_switcher_button.dart';
-// No longer need to import BarberMainNavigation here, we use named routes.
-// --- DEFINE mainBlue as a top-level constant ---
-const Color mainBlue = Color(0xFF3434C6);
-// --- END OF DEFINITION ---
 
-/// A modern, square, and refined popup dialog for Terms and Conditions.
+const Color mainBlue = Color(0xFF3434C6);
+
 class TermsAndConditionsDialog extends StatelessWidget {
-  final Color mainBlue = const Color(0xFF3434C6); // Use consistent main blue
+  final Color mainBlue = const Color(0xFF3434C6);
 
   const TermsAndConditionsDialog({super.key});
 
@@ -25,22 +22,21 @@ class TermsAndConditionsDialog extends StatelessWidget {
     final isDarkMode = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final localizations = AppLocalizations.of(context)!; // <-- GET LOCALIZATIONS
+    final localizations = AppLocalizations.of(context)!;
 
-    // Dialog background and text colors
     final dialogBackgroundColor = isDarkMode ? Colors.grey[850]! : Colors.white;
     final titleTextColor = isDarkMode ? Colors.white : Colors.black87;
     final bodyTextColor = isDarkMode ? Colors.grey[300]! : Colors.grey[800];
     final iconColor = mainBlue;
 
     return Dialog(
-      backgroundColor: Colors.transparent, // Transparent background for custom shape
+      backgroundColor: Colors.transparent,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9, // Responsive width
-        constraints: const BoxConstraints(maxHeight: 600), // Max height constraint
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: const BoxConstraints(maxHeight: 600),
         decoration: BoxDecoration(
           color: dialogBackgroundColor,
-          borderRadius: BorderRadius.circular(16.0), // Square but slightly rounded corners
+          borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3),
@@ -52,28 +48,25 @@ class TermsAndConditionsDialog extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- Header ---
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0), // Reduced vertical padding
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
               decoration: BoxDecoration(
-                color: mainBlue, // Use main blue for header
+                color: mainBlue,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // --- REDUCED TITLE TEXT SIZE ---
                   Text(
-                    localizations.termsAndConditionsDialogTitle, // <-- LOCALIZED TITLE
+                    localizations.termsAndConditionsDialogTitle,
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontSize: 18.0, // Explicitly set a smaller font size
+                      fontSize: 18.0,
                     ),
                   ),
-                  // --- REDUCED CLOSE ICON SIZE ---
                   IconButton(
-                    iconSize: 20.0, // Reduced icon size from default (usually 24.0)
+                    iconSize: 20.0,
                     icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -81,8 +74,6 @@ class TermsAndConditionsDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // --- Scrollable Content ---
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -92,9 +83,8 @@ class TermsAndConditionsDialog extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // --- Introduction ---
                           Text(
-                            localizations.introduction, // <-- LOCALIZED HEADING
+                            localizations.introduction,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -102,14 +92,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.termsIntroText, // <-- LOCALIZED BODY
+                            localizations.termsIntroText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Eligibility ---
                           Text(
-                            localizations.eligibility, // <-- LOCALIZED HEADING
+                            localizations.eligibility,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -117,14 +105,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.eligibilityText, // <-- LOCALIZED BODY
+                            localizations.eligibilityText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Use of Services ---
                           Text(
-                            localizations.useOfServices, // <-- LOCALIZED HEADING
+                            localizations.useOfServices,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -146,10 +132,8 @@ class TermsAndConditionsDialog extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Bookings ---
                           Text(
-                            localizations.bookings, // <-- LOCALIZED HEADING
+                            localizations.bookings,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -157,14 +141,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.bookingsText, // <-- LOCALIZED BODY
+                            localizations.bookingsText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- User Accounts ---
                           Text(
-                            localizations.userAccounts, // <-- LOCALIZED HEADING
+                            localizations.userAccounts,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -172,14 +154,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.userAccountsText, // <-- LOCALIZED BODY
+                            localizations.userAccountsText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Intellectual Property ---
                           Text(
-                            localizations.intellectualProperty, // <-- LOCALIZED HEADING
+                            localizations.intellectualProperty,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -187,14 +167,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.intellectualPropertyText, // <-- LOCALIZED BODY
+                            localizations.intellectualPropertyText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Disclaimer ---
                           Text(
-                            localizations.disclaimer, // <-- LOCALIZED HEADING
+                            localizations.disclaimer,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -202,14 +180,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.disclaimerText, // <-- LOCALIZED BODY
+                            localizations.disclaimerText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Limitation of Liability ---
                           Text(
-                            localizations.limitationOfLiability, // <-- LOCALIZED HEADING
+                            localizations.limitationOfLiability,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -217,14 +193,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.limitationOfLiabilityText, // <-- LOCALIZED BODY
+                            localizations.limitationOfLiabilityText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Governing Law ---
                           Text(
-                            localizations.governingLaw, // <-- LOCALIZED HEADING
+                            localizations.governingLaw,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -232,14 +206,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.governingLawText, // <-- LOCALIZED BODY
+                            localizations.governingLawText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Changes to Terms ---
                           Text(
-                            localizations.changesToTerms, // <-- LOCALIZED HEADING
+                            localizations.changesToTerms,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -247,14 +219,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.changesToTermsText, // <-- LOCALIZED BODY
+                            localizations.changesToTermsText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
                           const SizedBox(height: 20),
-
-                          // --- Contact Us ---
                           Text(
-                            localizations.contactUs, // <-- LOCALIZED HEADING
+                            localizations.contactUs,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: titleTextColor,
@@ -262,10 +232,10 @@ class TermsAndConditionsDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            localizations.contactUsText, // <-- LOCALIZED BODY
+                            localizations.contactUsText,
                             style: textTheme.bodyMedium?.copyWith(color: bodyTextColor),
                           ),
-                          const SizedBox(height: 20), // Extra space at the bottom
+                          const SizedBox(height: 20),
                         ],
                       ),
                     );
@@ -274,8 +244,6 @@ class TermsAndConditionsDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // --- Footer with Close Button ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
               child: Align(
@@ -285,12 +253,12 @@ class TermsAndConditionsDialog extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-                    backgroundColor: mainBlue, // Use main blue
+                    backgroundColor: mainBlue,
                     foregroundColor: Colors.white,
                     elevation: 2,
                   ),
                   child: Text(
-                    localizations.close, // <-- LOCALIZED BUTTON TEXT
+                    localizations.close,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -303,7 +271,6 @@ class TermsAndConditionsDialog extends StatelessWidget {
   }
 }
 
-
 class BarberRegisterScreen extends StatefulWidget {
   static const String routeName = '/barber/register';
   final Locale currentLocale;
@@ -315,38 +282,38 @@ class BarberRegisterScreen extends StatefulWidget {
     required this.onLocaleChange,
     required this.onThemeChange,
   });
+
   @override
   State<BarberRegisterScreen> createState() => _BarberRegisterScreenState();
 }
+
 class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _barbershopNameController = TextEditingController(); // <-- Renamed internally for clarity
+  final _barbershopNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _locationController = TextEditingController(); // Stores the resolved address
+  final _locationController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _isPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
-  bool _acceptTerms = false; // <-- Renamed to match standard naming
-  // --- NEW: State variables for new logic ---
-  String? _selectedSalonType; // 'men', 'women', 'both'
-  bool _isUsingLocation = false; // Tracks if "Use My Location" is active
-  Position? _currentPosition; // Stores the fetched GPS coordinates
-  String? _professionalType; // 'solo', 'owner'
+  bool _acceptTerms = false;
+  String? _selectedSalonType;
+  bool _isUsingLocation = false;
+  Position? _currentPosition;
+  String? _professionalType;
   final TextEditingController _totalSeatsController = TextEditingController();
   final TextEditingController _occupiedSeatsController = TextEditingController();
-  int _availableSeatsCalculated = 0; // Calculated, not user input
-  // --- END OF NEW ---
+  int _availableSeatsCalculated = 0;
+
   @override
   void initState() {
     super.initState();
-    // Listen to occupied seats changes to update available seats
     _occupiedSeatsController.addListener(_updateAvailableSeats);
   }
-  // --- NEW: Method to update calculated available seats ---
+
   void _updateAvailableSeats() {
     final totalStr = _totalSeatsController.text;
     final occupiedStr = _occupiedSeatsController.text;
@@ -355,7 +322,6 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
       final occupied = int.tryParse(occupiedStr) ?? 0;
       setState(() {
         _availableSeatsCalculated = total - occupied;
-        // Ensure it doesn't go negative
         if (_availableSeatsCalculated < 0) _availableSeatsCalculated = 0;
       });
     } else {
@@ -364,25 +330,20 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
       });
     }
   }
-  // --- END OF NEW ---
-  // --- NEW: Method to determine and request location permission ---
+
   Future<void> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
     setState(() {
-      _isUsingLocation = true; // Indicate location fetching started
-      _locationController.text = "..."; // Show loading indicator in field
+      _isUsingLocation = true;
+      _locationController.text = "...";
     });
     try {
-      // Test if location services are enabled.
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Location services are not enabled don't continue
-        // accessing the position and request users of the
-        // App to enable the location services.
         setState(() {
           _isUsingLocation = false;
-          _locationController.text = ""; // Clear loading indicator
+          _locationController.text = "";
         });
         if (mounted) {
           final localizations = AppLocalizations.of(context)!;
@@ -400,10 +361,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          // Permissions are denied, show snackbar.
           setState(() {
             _isUsingLocation = false;
-            _locationController.text = ""; // Clear loading indicator
+            _locationController.text = "";
           });
           if (mounted) {
             final localizations = AppLocalizations.of(context)!;
@@ -419,10 +379,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
         }
       }
       if (permission == LocationPermission.deniedForever) {
-        // Permissions are permanently denied, show snackbar and open app settings.
         setState(() {
           _isUsingLocation = false;
-          _locationController.text = ""; // Clear loading indicator
+          _locationController.text = "";
         });
         if (mounted) {
           final localizations = AppLocalizations.of(context)!;
@@ -433,37 +392,30 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
               backgroundColor: Colors.red,
             ),
           );
-          // Optionally open app settings
           openAppSettings();
         }
         return;
       }
-      // When we reach here, permissions are granted and we can
-      // continue accessing the position of the device.
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       setState(() {
         _currentPosition = position;
         _isUsingLocation = false;
-        // Convert coordinates to address (reverse geocoding) - simplified placeholder
-        // In a real app, you'd use a geocoding service (e.g., Google Maps Geocoding API)
         _locationController.text = "${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
       });
     } catch (e) {
       setState(() {
         _isUsingLocation = false;
-        _locationController.text = ""; // Clear loading indicator
+        _locationController.text = "";
       });
-      // --- IMPROVED ERROR HANDLING ---
       if (mounted) {
         final localizations = AppLocalizations.of(context)!;
         String errorMessage = localizations.failedToGetLocation ?? 'Failed to get location.';
-        // --- CHECK FOR SPECIFIC PLUGIN EXCEPTION ---
         if (e is MissingPluginException) {
           errorMessage = '${localizations.locationPluginError ?? "Location plugin error"}: ${e.message}';
         } else if (e is PermissionDeniedException) {
           errorMessage = localizations.locationPermissionDenied ?? 'Location permission denied.';
         } else {
-           errorMessage = '$errorMessage $e'; // Include original error for debugging
+           errorMessage = '$errorMessage $e';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -472,12 +424,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
           ),
         );
       }
-      // --- END OF IMPROVEMENT ---
     }
   }
-  // --- END OF NEW ---
 
-  /// Shows the Terms and Conditions dialog.
   void _showTermsAndConditionsDialog() {
     showDialog(
       context: context,
@@ -487,12 +436,8 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
     );
   }
 
-
   Future<void> _register() async {
-    // --- UPDATED: Include validations for new conditional fields if applicable ---
-    // --- UPDATED: Include _acceptTerms check ---
     if (_formKey.currentState!.validate() && _acceptTerms && _selectedSalonType != null && _professionalType != null) {
-      // Validate seat fields if professional type is owner
       if (_professionalType == 'owner') {
         final totalStr = _totalSeatsController.text;
         final occupiedStr = _occupiedSeatsController.text;
@@ -504,7 +449,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
               backgroundColor: Colors.red,
             ),
           );
-          return; // Stop registration
+          return;
         }
         final total = int.tryParse(totalStr) ?? 0;
         final occupied = int.tryParse(occupiedStr) ?? 0;
@@ -544,12 +489,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
       });
       await Future.delayed(const Duration(seconds: 2));
       try {
-        // --- COLLECT ALL DATA INCLUDING NEW FIELDS ---
         String email = _emailController.text.trim();
         String name = _nameController.text.trim();
-        // --- FIXED: Use salon name terminology ---
-        String salonName = _barbershopNameController.text.trim(); // <-- Use salonName
-        // --- END OF FIX ---
+        String salonName = _barbershopNameController.text.trim();
         String phone = _phoneController.text.trim();
         String location = _locationController.text.trim();
         String salonType = _selectedSalonType ?? '';
@@ -557,15 +499,15 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
         int totalSeats = int.tryParse(_totalSeatsController.text) ?? 0;
         int occupiedSeats = int.tryParse(_occupiedSeatsController.text) ?? 0;
         int availableSeats = _availableSeatsCalculated;
-        // --- SIMULATED SUCCESSFUL REGISTRATION LOGIC ---
-        // In a real app, you would send all this data to your backend API
-        // --- UPDATED: Removed requirement for salonName and location to be non-empty ---
+
         if (email.isNotEmpty &&
             email != 'user@example.com' &&
             name.isNotEmpty &&
-            // salonName.isNotEmpty && // <-- REMOVED: Salon Name is optional
+            // Only require salon name if owner
+            (profType == 'owner' ? salonName.isNotEmpty : true) &&
             phone.isNotEmpty &&
-            // location.isNotEmpty &&  // <-- REMOVED: Location is optional
+            // Only require location if owner
+            (profType == 'owner' ? location.isNotEmpty : true) &&
             _passwordController.text.length >= 6 &&
             _passwordController.text == _confirmPasswordController.text &&
             salonType.isNotEmpty &&
@@ -573,30 +515,26 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
           final localizations = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(localizations.saloonRegistrationSuccessful ?? // <-- GENERIC TERM FOR SALON ENTITY
-                  'Salon registration successful!'),
+              content: Text(localizations.saloonRegistrationSuccessful ?? 'Salon registration successful!'),
               backgroundColor: mainBlue,
               duration: const Duration(seconds: 1),
             ),
           );
-          // --- FIX: Navigate to the barber's home screen and clear the auth stack ---
           if (mounted) {
             Navigator.of(context).pushNamedAndRemoveUntil('/barber/home', (Route<dynamic> route) => false);
           }
         } else {
-          throw Exception(
-              "Registration failed. Please ensure all fields are filled correctly.");
+          throw Exception("Registration failed. Please ensure all fields are filled correctly.");
         }
       } catch (e) {
         setState(() {
           _isLoading = false;
         });
         final localizations = AppLocalizations.of(context)!;
-        String errorMessage =
-            localizations.registrationFailed ?? 'Registration failed.';
+        String errorMessage = localizations.registrationFailed ?? 'Registration failed.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("$errorMessage $e"), // Include error details for debugging
+            content: Text("$errorMessage $e"),
             backgroundColor: Colors.red,
           ),
         );
@@ -607,26 +545,25 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
        if (_selectedSalonType == null) {
          missingField = localizations.salonType ?? "Salon Type";
        } else if (_professionalType == null) {
-         missingField = localizations.professionalType ?? "Professional Type"; // <-- Keep generic if needed
+         missingField = localizations.professionalType ?? "Professional Type";
        }
        ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(
-           content: Text("${localizations.pleaseSelect} $missingField"), // Generic message
+           content: Text("${localizations.pleaseSelect} $missingField"),
            backgroundColor: Colors.red,
          ),
        );
-    } else if (!_acceptTerms) { // <-- Use _acceptTerms
+    } else if (!_acceptTerms) {
       final localizations = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(localizations.pleaseAcceptTerms ?? // <-- LOCALIZED ERROR MESSAGE
-              'Please accept the terms and conditions.'),
+          content: Text(localizations.pleaseAcceptTerms ?? 'Please accept the terms and conditions.'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
-  // --- EXISTING VALIDATORS REMAIN LARGELY THE SAME ---
+
   String? _validateName(String? value) {
     final localizations = AppLocalizations.of(context)!;
     if (value == null || value.trim().isEmpty) {
@@ -634,86 +571,66 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
     }
     return null;
   }
-  // --- FIXED: Validator for Salon Name ---
-  // --- UPDATED: Make Salon Name Optional ---
-  String? _validateBarbershopName(String? value) { // <-- Renamed method
+
+  String? _validateBarbershopName(String? value) {
     final localizations = AppLocalizations.of(context)!;
-    // Allow empty input for optional field
-    if (value == null || value.trim().isEmpty) {
-      return null; // No error if empty
+    // Only validate if professional type is owner
+    if (_professionalType == 'owner') {
+      if (value == null || value.trim().isEmpty) {
+        return localizations.pleaseEnterSalonName ?? 'Please enter your salon name';
+      }
     }
-    // Optional: You could still validate the format if something is entered
-    // For now, we'll just allow it to be empty or any non-empty string.
-    // If you want basic validation when entered, uncomment the lines below:
-    /*
-    if (value.trim().length < 2) { // Example: at least 2 characters if provided
-       return localizations.pleaseEnterValidSalonName ?? 'Please enter a valid salon name (at least 2 characters).';
-    }
-    */
     return null;
   }
-  // --- END OF UPDATE ---
-  // --- FIXED: Validator for Phone Number with Numeric Restriction ---
+
   String? _validatePhoneNumber(String? value) {
     final localizations = AppLocalizations.of(context)!;
     if (value == null || value.trim().isEmpty) {
-      return localizations.pleaseEnterPhoneNumber ??
-          'Please enter your phone number';
+      return localizations.pleaseEnterPhoneNumber ?? 'Please enter your phone number';
     }
-    // --- FIXED: Strip spaces, dashes, parentheses, plus signs for validation ---
     String cleanNumber = value.trim().replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
     if (cleanNumber.isEmpty) {
        return localizations.pleaseEnterValidPhoneNumber ?? 'Please enter a valid phone number';
     }
-    // Basic check: Ensure it's mostly digits and has a reasonable length (e.g., 7-15 digits after cleaning)
-    // This regex allows for international numbers starting with digits
     if (!RegExp(r'^[0-9]{7,15}$').hasMatch(cleanNumber)) {
-      return localizations.pleaseEnterValidPhoneNumber ??
-          'Please enter a valid phone number (7-15 digits)';
+      return localizations.pleaseEnterValidPhoneNumber ?? 'Please enter a valid phone number (7-15 digits)';
     }
     return null;
   }
-  // --- END OF FIX ---
-  // --- UPDATED: Validator for Location ---
-  // --- UPDATED: Make Location Optional ---
+
   String? _validateLocation(String? value) {
     final localizations = AppLocalizations.of(context)!;
-    // Allow empty input for optional field
-    if (value == null || value.trim().isEmpty) {
-      return null; // No error if empty
+    // Only validate if professional type is owner
+    if (_professionalType == 'owner') {
+      if (value == null || value.trim().isEmpty) {
+        return localizations.pleaseEnterLocation ?? 'Please enter your location';
+      }
     }
-    // Optional: Add validation if something is entered (e.g., minimum length)
-    // Example:
-    /*
-    if (value.trim().length < 5) {
-      return localizations.pleaseEnterValidLocation ?? 'Please enter a more specific location.';
-    }
-    */
     return null;
   }
-  // --- END OF UPDATE ---
+
   String? _validateEmail(String? value) {
     final localizations = AppLocalizations.of(context)!;
     if (value == null || value.isEmpty) {
       return localizations.pleaseEnterEmail ?? 'Please enter your email';
     }
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-      return localizations.pleaseEnterValidEmail ??
-          'Please enter a valid email';
+      return localizations.pleaseEnterValidEmail ?? 'Please enter a valid email';
     }
     return null;
   }
+
   String? _validatePassword(String? value) {
     final localizations = AppLocalizations.of(context)!;
     if (value == null || value.isEmpty) {
       return localizations.pleaseEnterPassword ?? 'Please enter a password';
     }
     if (value.length < 6) {
-      return localizations.passwordTooShort ??
-          'Password must be at least 6 characters';
+      return localizations.passwordTooShort ?? 'Password must be at least 6 characters';
     }
     return null;
   }
+
   String? _validateConfirmPassword(String? value) {
     final localizations = AppLocalizations.of(context)!;
     if (value != _passwordController.text) {
@@ -721,10 +638,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
     }
     return null;
   }
-  // --- NEW: Validators for Seat Fields ---
+
   String? _validateSeatInput(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
-      // Let overall validation handle empty fields if owner
       return null;
     }
     final parsedValue = int.tryParse(value);
@@ -736,7 +652,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
     }
     return null;
   }
-  // --- END OF NEW ---
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -746,42 +662,39 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    // --- NEW: Dispose new controllers ---
     _totalSeatsController.removeListener(_updateAvailableSeats);
     _occupiedSeatsController.removeListener(_updateAvailableSeats);
     _totalSeatsController.dispose();
     _occupiedSeatsController.dispose();
-    // --- END OF NEW ---
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
     final textTheme = theme.textTheme;
     final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
       appBar: AppBar(
         backgroundColor: mainBlue,
         foregroundColor: Colors.white,
-        // --- NEW: Added leading back button ---
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Go back to previous screen (likely BarberLogin)
+            Navigator.pop(context);
           },
         ),
-        // --- END OF NEW ---
         title: Text(
-          localizations.saloonRegisterTitle ?? 'Salon Register', // <-- GENERIC TITLE FOR SALON
+          localizations.saloonRegisterTitle ?? 'Salon Register',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        // --- UPDATED: Disable automatic leading to use custom leading ---
         automaticallyImplyLeading: false,
         actions: [
           LanguageSwitcherButton(
@@ -808,10 +721,8 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Header
                         Text(
-                          localizations.saloonCreateAccount ?? // <-- GENERIC HEADER FOR SALON
-                              'Create Your Salon Account',
+                          localizations.saloonCreateAccount ?? 'Create Your Salon Account',
                           style: textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: isDarkMode ? Colors.white : Colors.black87,
@@ -820,23 +731,21 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          localizations.saloonRegisterSubtitle ?? // <-- GENERIC SUBTITLE FOR SALON
-                              'Sign up to manage your salon services.',
+                          localizations.saloonRegisterSubtitle ?? 'Sign up to manage your salon services.',
                           style: textTheme.titleMedium?.copyWith(
                             color: isDarkMode ? Colors.grey[400]! : Colors.grey[600],
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 30),
-                        // --- NEW: Salon Type Selection ---
                         Text(
-                          localizations.salonType ?? 'Salon Type', // Add this key to your localization files
+                          localizations.salonType ?? 'Salon Type',
                           style: textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold, color: mainBlue),
                         ),
                         const SizedBox(height: 8),
                         Container(
-                          height: 60, // Fixed height for the row
+                          height: 60,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12.0),
                             border: Border.all(color: isDarkMode ? Colors.grey[700]! : Colors.grey[400]!),
@@ -867,10 +776,8 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                           ),
                         ),
                          const SizedBox(height: 16),
-                        // --- END OF NEW ---
-                        // --- NEW: Professional Type Selection ---
                         Text(
-                          localizations.professionalType ?? 'Professional Type', // Add this key
+                          localizations.professionalType ?? 'Professional Type',
                           style: textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold, color: mainBlue),
                         ),
@@ -879,47 +786,39 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                           children: [
                             Expanded(
                               child: ChoiceChip(
-                                label: Text(localizations.soloProfessional ?? 'Solo Professional'), // Add key, generic term
+                                label: Text(localizations.soloProfessional ?? 'Solo Professional'),
                                 selected: _professionalType == 'solo',
                                 onSelected: (selected) => setState(() => _professionalType = selected ? 'solo' : null),
                                 selectedColor: mainBlue,
                                 backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                                // --- UPDATED: Improved checkmark visibility to WHITE ---
                                 labelStyle: TextStyle(
                                   color: _professionalType == 'solo'
-                                      ? Colors.white // <-- WHITE TEXT FOR SELECTED
+                                      ? Colors.white
                                       : (isDarkMode ? Colors.white : Colors.black87),
                                 ),
-                                // --- END OF UPDATE ---
-                                // --- REMOVED CHECKMARK COLOR (avatar property) ---
                               ),
                             ),
                             const SizedBox(width: 10),
                              Expanded(
                               child: ChoiceChip(
-                                label: Text(localizations.salonOwner ?? 'Salon Owner'), // Add key, generic term
+                                label: Text(localizations.salonOwner ?? 'Salon Owner'),
                                 selected: _professionalType == 'owner',
                                 onSelected: (selected) => setState(() => _professionalType = selected ? 'owner' : null),
                                  selectedColor: mainBlue,
                                 backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                                // --- UPDATED: Improved checkmark visibility to WHITE ---
                                 labelStyle: TextStyle(
                                   color: _professionalType == 'owner'
-                                      ? Colors.white // <-- WHITE TEXT FOR SELECTED
+                                      ? Colors.white
                                       : (isDarkMode ? Colors.white : Colors.black87),
                                 ),
-                                // --- END OF UPDATE ---
-                                // --- REMOVED CHECKMARK COLOR (avatar property) ---
                               ),
                             ),
                           ],
                         ),
                          const SizedBox(height: 16),
-                        // --- END OF NEW ---
-                        // --- NEW: Conditional Seat Information for Salon Owners ---
                         if (_professionalType == 'owner') ...[
                           Text(
-                            localizations.seatInformation ?? 'Seat Information', // Add key
+                            localizations.seatInformation ?? 'Seat Information',
                             style: textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold, color: mainBlue),
                           ),
@@ -929,9 +828,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                               Expanded(
                                 child: TextFormField(
                                   controller: _totalSeatsController,
-                                  keyboardType: TextInputType.number, // Ensure numeric keyboard
+                                  keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
-                                    labelText: localizations.totalSeats ?? 'Total Seats', // Add key
+                                    labelText: localizations.totalSeats ?? 'Total Seats',
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                                   ),
                                   validator: (value) => _validateSeatInput(value, localizations.totalSeats ?? 'Total Seats'),
@@ -941,9 +840,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                                Expanded(
                                 child: TextFormField(
                                   controller: _occupiedSeatsController,
-                                  keyboardType: TextInputType.number, // Ensure numeric keyboard
+                                  keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
-                                    labelText: localizations.occupiedSeats ?? 'Occupied Seats', // Add key
+                                    labelText: localizations.occupiedSeats ?? 'Occupied Seats',
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                                   ),
                                    validator: (value) => _validateSeatInput(value, localizations.occupiedSeats ?? 'Occupied Seats'),
@@ -952,8 +851,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                             ],
                           ),
                            const SizedBox(height: 8),
-                           // Display Available Seats (Read-only)
-                          Container(
+                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
                             decoration: BoxDecoration(
                               color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
@@ -963,7 +861,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  localizations.availableSeats ?? 'Available Seats:', // Add key
+                                  localizations.availableSeats ?? 'Available Seats:',
                                   style: textTheme.bodyMedium,
                                 ),
                                 Text(
@@ -975,11 +873,8 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                           ),
                           const SizedBox(height: 16),
                         ],
-                        // --- END OF NEW ---
-                        // Personal Info
                         Text(
-                          localizations.personalInformation ??
-                              'Personal Information',
+                          localizations.personalInformation ?? 'Personal Information',
                           style: textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold, color: mainBlue),
                         ),
@@ -995,82 +890,71 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                           validator: _validateName,
                         ),
                         const SizedBox(height: 16),
-                        // --- FIXED: Salon Info (formerly Business Info) ---
                         Text(
-                          localizations.saloonInformation ?? 'Salon Information', // <-- CHANGED TO SALON INFO
+                          localizations.saloonInformation ?? 'Salon Information',
                           style: textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold, color: mainBlue),
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _barbershopNameController, // <-- Controller stays the same
-                          decoration: InputDecoration(
-                            labelText: localizations.saloonName ?? // <-- CHANGED LABEL TO SALON NAME
-                                'Salon Name', // <-- DEFAULT LABEL FOR SALON NAME
-                            prefixIcon: const Icon(Symbols.storefront),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12.0)),
+                        // Conditionally show salon name field only for owners
+                        if (_professionalType == 'owner') ...[
+                          TextFormField(
+                            controller: _barbershopNameController,
+                            decoration: InputDecoration(
+                              labelText: localizations.saloonName ?? 'Salon Name',
+                              prefixIcon: const Icon(Symbols.storefront),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0)),
+                            ),
+                            validator: _validateBarbershopName,
                           ),
-                          validator: _validateBarbershopName, // <-- Use the updated validator
-                        ),
-                        const SizedBox(height: 16),
-                        // --- END OF FIX ---
+                          const SizedBox(height: 16),
+                        ],
                         TextFormField(
                           controller: _phoneController,
-                          // --- FIXED: Restrict to numeric input ---
-                          keyboardType: TextInputType.phone, // Preferred for phone numbers
-                          // Optional: Add FilteringTextInputFormatter.digitsOnly for stricter control
-                          // inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          // --- END OF FIX ---
+                          keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
-                            labelText: localizations.phoneNumber ??
-                                'Phone Number',
+                            labelText: localizations.phoneNumber ?? 'Phone Number',
                             prefixIcon: const Icon(Symbols.phone_iphone),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12.0)),
                           ),
-                          validator: _validatePhoneNumber, // Uses the updated validator
+                          validator: _validatePhoneNumber,
                         ),
                         const SizedBox(height: 16),
-                        // --- UPDATED: Location Field with "Use My Location" Button ---
-                         TextFormField(
-                          controller: _locationController,
-                          enabled: !_isUsingLocation, // Disable field while fetching
-                          keyboardType: TextInputType.streetAddress,
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            labelText: localizations.location ??
-                                'Location/Address',
-                            prefixIcon: const Icon(Symbols.location_on),
-                            // --- FIXED LINE BELOW ---
-                            suffixIcon: IconButton(
-                              icon: _isUsingLocation
-                                  // --- Use SizedBox and ensure CircularProgressIndicator animation works ---
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        // --- Use Colors.white directly to avoid const context issues ---
-                                        valueColor: AlwaysStoppedAnimation<Color>(mainBlue), // Use mainBlue for consistency
-                                      ),
-                                    )
-                                  : const Icon(Symbols.my_location, color: mainBlue), // Use My Location icon
-                              onPressed: _isUsingLocation ? null : _determinePosition, // Disable while fetching
+                        // Conditionally show location field only for owners
+                        if (_professionalType == 'owner') ...[
+                          TextFormField(
+                            controller: _locationController,
+                            enabled: !_isUsingLocation,
+                            keyboardType: TextInputType.streetAddress,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              labelText: localizations.location ?? 'Location/Address',
+                              prefixIcon: const Icon(Symbols.location_on),
+                              suffixIcon: IconButton(
+                                icon: _isUsingLocation
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(mainBlue),
+                                        ),
+                                      )
+                                    : const Icon(Symbols.my_location, color: mainBlue),
+                                onPressed: _isUsingLocation ? null : _determinePosition,
+                              ),
+                              alignLabelWithHint: true,
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0)),
                             ),
-                            // --- END OF FIX ---
-                            alignLabelWithHint: true,
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12.0)),
+                            validator: _validateLocation,
                           ),
-                          validator: _validateLocation,
-                        ),
-                         const SizedBox(height: 16),
-                        // --- END OF UPDATE ---
-                        // Account Info
+                          const SizedBox(height: 16),
+                        ],
                         Text(
-                          localizations.accountInformation ??
-                              'Account Information',
+                          localizations.accountInformation ?? 'Account Information',
                           style: textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold, color: mainBlue),
                         ),
@@ -1115,8 +999,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                           controller: _confirmPasswordController,
                           obscureText: _isConfirmPasswordObscured,
                           decoration: InputDecoration(
-                            labelText: localizations.confirmPassword ??
-                                'Confirm Password',
+                            labelText: localizations.confirmPassword ?? 'Confirm Password',
                             prefixIcon: const Icon(Symbols.lock_outline),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -1126,8 +1009,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                               ),
                               onPressed: () {
                                 setState(() {
-                                  _isConfirmPasswordObscured =
-                                      !_isConfirmPasswordObscured;
+                                  _isConfirmPasswordObscured = !_isConfirmPasswordObscured;
                                 });
                               },
                             ),
@@ -1137,16 +1019,14 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                           validator: _validateConfirmPassword,
                         ),
                         const SizedBox(height: 20),
-                        // Terms checkbox
-                        // --- UPDATED: Integrate Terms and Conditions Dialog ---
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Checkbox(
-                              value: _acceptTerms, // <-- Use _acceptTerms
+                              value: _acceptTerms,
                               onChanged: (bool? value) {
                                 setState(() {
-                                  _acceptTerms = value ?? false; // <-- Use _acceptTerms
+                                  _acceptTerms = value ?? false;
                                 });
                               },
                               activeColor: mainBlue,
@@ -1154,21 +1034,20 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                             Expanded(
                               child: Text.rich(
                                 TextSpan(
-                                  text: '${localizations.iAgreeToThe} ', // <-- LOCALIZED TEXT
+                                  text: '${localizations.iAgreeToThe} ',
                                   style: textTheme.bodyMedium?.copyWith(
                                     color: isDarkMode ? Colors.grey[300]! : Colors.grey[700],
                                   ),
                                   children: <TextSpan>[
                                     TextSpan(
-                                      text: localizations.termsAndConditions, // <-- LOCALIZED LINK TEXT
+                                      text: localizations.termsAndConditions,
                                       style: const TextStyle(
-                                        color: mainBlue, // Use main blue
+                                        color: mainBlue,
                                         fontWeight: FontWeight.bold,
                                         decoration: TextDecoration.underline,
                                       ),
-                                      // --- USE TAP GESTURE RECOGNIZER TO SHOW DIALOG ---
                                       recognizer: TapGestureRecognizer()
-                                        ..onTap = _showTermsAndConditionsDialog, // <-- TRIGGER DIALOG HERE
+                                        ..onTap = _showTermsAndConditionsDialog,
                                     ),
                                   ],
                                 ),
@@ -1176,11 +1055,9 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                             ),
                           ],
                         ),
-                        // --- END OF UPDATE ---
                         const SizedBox(height: 24),
-                        // Register button
                         ElevatedButton(
-                          onPressed: _isLoading ? null : _register, // <-- Use _register
+                          onPressed: _isLoading ? null : _register,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16.0),
                             shape: RoundedRectangleBorder(
@@ -1189,14 +1066,12 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                             foregroundColor: Colors.white,
                             elevation: 2,
                           ),
-                          // --- FIXED: Apply same fix to Register button's loading indicator if present ---
                           child: _isLoading
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    // --- Use Colors.white directly ---
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
@@ -1206,16 +1081,13 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
                                 ),
-                          // --- END OF FIX ---
                         ),
                         const SizedBox(height: 24),
-                        // Login link
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              localizations.alreadyHaveAccount ??
-                                  'Already have an account?',
+                              localizations.alreadyHaveAccount ?? 'Already have an account?',
                               style: textTheme.bodyMedium?.copyWith(
                                 color: isDarkMode
                                     ? Colors.grey[400]!
@@ -1249,7 +1121,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
       ),
     );
   }
-  // --- NEW: Helper Widget for Salon Type Option ---
+
   Widget _buildSalonTypeOption({
     required BuildContext context,
     required String label,
@@ -1264,7 +1136,7 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
         child: Container(
           decoration: BoxDecoration(
             color: isSelected ? mainBlue.withOpacity(0.2) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12.0), // Match parent border radius
+            borderRadius: BorderRadius.circular(12.0),
           ),
           child: Center(
             child: Text(
@@ -1279,5 +1151,4 @@ class _BarberRegisterScreenState extends State<BarberRegisterScreen> {
       ),
     );
   }
-  // --- END OF NEW ---
 }
