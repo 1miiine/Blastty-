@@ -44,21 +44,21 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() { _isLoading = true; });
 
-      // --- MODIFICATION: Use the AuthService ---
-      final result = await _authService.login(
+      // --- DEFINITIVE FIX: Call the specific loginProfessional method ---
+      final result = await _authService.loginProfessional(
         _emailController.text.trim(),
         _passwordController.text.trim(),
-        'professional', // Specify the role for the professional login endpoint
       );
 
       if (!mounted) return;
 
+      final localizations = AppLocalizations.of(context)!;
+
       if (result['success'] == true) {
         final userRole = result['user']['role'];
 
-        // Ensure the role is 'professional' or 'owner' to access the barber dashboard
+        // This screen is for professionals or owners.
         if (userRole == 'professional' || userRole == 'owner') {
-          final localizations = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(localizations.loginSuccessful ?? 'Login successful', style: const TextStyle(color: Colors.white)),
@@ -66,19 +66,21 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
               duration: const Duration(milliseconds: 900),
             ),
           );
-          
+
           Navigator.of(context).pushNamedAndRemoveUntil('/barber/home', (Route<dynamic> route) => false);
         } else {
-          // If a regular user tries to log in here
+          // ERROR: A regular 'user' tried to log in here.
           setState(() { _isLoading = false; });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Access denied. This login is for professionals only."), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text("Access denied. This login is for professionals only.", style: TextStyle(color: Colors.white)),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       } else {
         // FAILED LOGIN
         setState(() { _isLoading = false; });
-        final localizations = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message'] ?? localizations.invalidCredentials, style: const TextStyle(color: Colors.white)),

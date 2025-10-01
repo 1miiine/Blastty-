@@ -470,7 +470,7 @@ class _BarberSettingsScreenState extends State<BarberSettingsScreen> {
             Switch(
               value: isToggled,
               onChanged: onToggle,
-              activeColor: mainBlue,
+              activeThumbColor: mainBlue,
               activeTrackColor: mainBlue.withOpacity(0.3),
               inactiveThumbColor: Colors.grey,
               inactiveTrackColor: Colors.grey.withOpacity(0.3),

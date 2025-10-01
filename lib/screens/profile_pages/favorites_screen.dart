@@ -184,18 +184,14 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       // --- ADAPT THIS LOGIC TO YOUR DATA STRUCTURE ---
       // Example: If you have a static list like Barber.simpleBarbers
       // Iterate through the list and find the one with the matching ID
-      if (Barber.simpleBarbers != null) {
-        for (var barber in Barber.simpleBarbers) {
-          if (barber.id == barberId) {
-            print("SUCCESS: Found barber with ID '$barberId': ${barber.name}");
-            return barber;
-          }
+      for (var barber in Barber.simpleBarbers) {
+        if (barber.id == barberId) {
+          print("SUCCESS: Found barber with ID '$barberId': ${barber.name}");
+          return barber;
         }
-        print("WARNING: Barber with ID '$barberId' not found in Barber.simpleBarbers list.");
-      } else {
-        print("WARNING: Barber.simpleBarbers list is null or inaccessible.");
       }
-
+      print("WARNING: Barber with ID '$barberId' not found in Barber.simpleBarbers list.");
+    
       // Example 2: If you have a service to fetch by ID
       // return fetchBarberById(barberId); // Your method to fetch by ID
 
@@ -220,7 +216,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         print("### ERROR: Barber ID is null or empty in barberData. Cannot proceed.");
         if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Barber information is incomplete.'), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
+                const SnackBar(content: Text('Barber information is incomplete.'), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
             );
         }
         return;

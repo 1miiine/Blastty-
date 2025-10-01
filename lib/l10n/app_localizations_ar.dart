@@ -2347,6 +2347,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get yes => 'نعم';
 
   @override
+  String get phoneMustBe10Digits => 'يجب أن يتكون رقم الهاتف من 10 أرقام ';
+
+  @override
+  String get phoneMustBeNumeric => 'يجب أن يحتوي رقم الهاتف على أرقام فقط';
+
+  @override
   String get bookingSent =>
       'تم إرسال طلب الحجز الخاص بك. ستتلقى تأكيدًا قريبًا.';
 

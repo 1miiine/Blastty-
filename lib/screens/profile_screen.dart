@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:barber_app_demo/providers/locale_provider.dart'; // Adjust path if necessary
 import '../l10n/app_localizations.dart';
 import '../widgets/shared/responsive_sliver_app_bar.dart';
+import 'package:barber_app_demo/services/auth_service.dart'; // <-- IMPORT THE AUTH SERVICE
 
 const Color mainBlue = Color(0xFF3434C6);
 // Define the dark background color to match HomeScreen
@@ -729,63 +730,55 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  /// Confirms logout and performs the action.
-  /// (Unchanged from PDF)
   void _confirmLogout() {
     final localizations = AppLocalizations.of(context)!;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    // final backgroundColor = isDarkMode ? Colors.grey[850]! : Colors.white; // <-- OLD
-    final backgroundColor = isDarkMode ? Colors.grey[850]! : Colors.white; // <-- CHANGED (Match HomeScreen card)
+    final backgroundColor = isDarkMode ? Colors.grey[850]! : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black87;
+
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: backgroundColor,
-          title: Text(
-            localizations.logout,
-            style: TextStyle(color: textColor),
-          ),
-          content: Text(
-            localizations.confirmLogout,
-            style: TextStyle(color: textColor),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                localizations.no,
-                style: TextStyle(
-                    color: isDarkMode ? Colors.white : mainBlue),
-              ),
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: backgroundColor,
+        title: Text(
+          localizations.logout,
+          style: TextStyle(color: textColor),
+        ),
+        content: Text(
+          localizations.confirmLogout,
+          style: TextStyle(color: textColor),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            child: Text(
+              localizations.cancel,
+              style: TextStyle(color: isDarkMode ? Colors.white : mainBlue),
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close confirmation dialog
-                //--- PERFORM LOGOUT ACTION---
-                // Example: Call your auth service
-                // final AuthService authService= AuthService();
-                // await authService.signOut();
-                // Simulate successful logout
-                bool logoutSuccess = true; // Replace with actual service call result
-                if (logoutSuccess) {
-                  //--- NAVIGATE TO LOGIN SCREEN AND CLEAR AUTH STACK---
-                  Navigator.pushReplacementNamed(
-                      context, LoginScreen.routeName); //<--NAVIGATE TO LOGIN
-                  // ignore: dead_code
-                } else {
-                  //--- SHOW LOGOUT FAILURE SNACKBAR---
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: mainBlue),
-              child: Text(
-                localizations.yes,
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: Text(localizations.logout),
+            onPressed: () async { // Make this async
+              // 1. Close the confirmation dialog
+              Navigator.of(ctx).pop();
+
+              // 2. Instantiate the AuthService and call logout
+              final AuthService authService = AuthService();
+              await authService.logout(); // This deletes the token
+
+              // 3. Navigate to the Login Screen and clear all previous screens
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                    LoginScreen.routeName,
+                        (Route<dynamic> route) => false // This predicate removes all routes
+                );
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -981,7 +974,7 @@ Widget build(BuildContext context) {
             const Divider(height: 1),
             //--- DARK MODE TOGGLE TILE---
             SwitchListTile(
-              activeColor: mainBlue,
+              activeThumbColor: mainBlue,
               title: Text(
                 localizations.mode,
                 style: textTheme.bodyMedium?.copyWith(

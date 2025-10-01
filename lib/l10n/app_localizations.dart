@@ -4624,6 +4624,18 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get yes;
 
+  /// No description provided for @phoneMustBe10Digits.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number must be exactly 10 digits'**
+  String get phoneMustBe10Digits;
+
+  /// No description provided for @phoneMustBeNumeric.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number must contain only numbers'**
+  String get phoneMustBeNumeric;
+
   /// No description provided for @bookingSent.
   ///
   /// In en, this message translates to:

@@ -315,7 +315,7 @@ class _BarberManageNotificationsScreenState
               value: value,
               onChanged: onChanged,
               // --- FIX 2: Use app_colors.mainBlue for active color ---
-              activeColor: app_colors.mainBlue,
+              activeThumbColor: app_colors.mainBlue,
             ),
           ],
         ),

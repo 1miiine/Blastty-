@@ -225,7 +225,7 @@ class _BarberScheduleScreenState extends State<BarberScheduleScreen> with Ticker
                 Switch(
                   value: schedule.isAcceptingBookings,
                   onChanged: schedule.isOpen ? (value) => provider.toggleAcceptingBookings(dayKey) : null,
-                  activeColor: mainBlue,
+                  activeThumbColor: mainBlue,
                   inactiveThumbColor: theme.disabledColor,
                 ),
               ],

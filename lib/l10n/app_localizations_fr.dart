@@ -2403,6 +2403,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get yes => 'Oui';
 
   @override
+  String get phoneMustBe10Digits =>
+      'Le numéro de téléphone doit comporter exactement 10 chiffres';
+
+  @override
+  String get phoneMustBeNumeric =>
+      'Le numéro de téléphone ne doit contenir que des chiffres';
+
+  @override
   String get bookingSent =>
       'Votre demande de réservation a été envoyée. Vous recevrez bientôt une confirmation.';
 

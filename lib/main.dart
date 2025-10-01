@@ -15,7 +15,7 @@ import 'providers/locale_provider.dart';
 
 // --- NEW: Import the new providers needed for HomeScreen ---
 import 'providers/home_screen_provider.dart'; // Import the moved provider
-import 'providers/barber_posts_provider.dart'; // Import the moved provider
+import 'providers/featured_barber_posts_provider.dart'; // Import the moved provider
 // --- END OF NEW ---
 
 import 'l10n/app_localizations.dart';
@@ -154,7 +154,7 @@ class _MyAppState extends State<MyApp> {
             // --- NEW PROVIDERS FOR HOMESCREEN ---
             // These providers are now available throughout the app, specifically to HomeScreen
             ChangeNotifierProvider(create: (_) => HomeScreenProvider()),
-            ChangeNotifierProvider(create: (_) => BarberPostsProvider()),
+            ChangeNotifierProvider(create: (_) => FeaturedBarberProvider()),
             // --- END OF NEW PROVIDERS ---
           ],
           child: Consumer2<LocaleProvider, ThemeProvider>(

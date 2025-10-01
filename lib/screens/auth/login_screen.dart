@@ -40,37 +40,23 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() { _isLoading = true; });
 
-      // --- MODIFICATION: Use the AuthService ---
-      final result = await _authService.login(
+      // --- DEFINITIVE FIX: Call the specific loginUser method ---
+      final result = await _authService.loginUser(
         _emailController.text.trim(),
         _passwordController.text.trim(),
-        'user', // Specify the role for the client login endpoint
       );
 
-      // Check if the widget is still in the tree before proceeding
       if (!mounted) return;
 
+      final localizations = AppLocalizations.of(context)!;
+
       if (result['success'] == true) {
-        // SUCCESSFUL LOGIN
-        final userRole = result['user']['role'];
-
-        String routeToNavigate;
-        if (userRole == 'user') {
-          routeToNavigate = '/user/home';
-        } else {
-          // Handle unexpected role, e.g., a barber trying to log in here
-          routeToNavigate = '/role-selection';
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Access denied for this role."), backgroundColor: Colors.red),
-          );
-        }
-        
-        Navigator.pushNamedAndRemoveUntil(context, routeToNavigate, (route) => false);
-
+        // Since we called loginUser, we can be 100% sure the role is 'user'.
+        // No need to check the role here.
+        Navigator.pushNamedAndRemoveUntil(context, '/user/home', (route) => false);
       } else {
         // FAILED LOGIN
         setState(() { _isLoading = false; });
-        final localizations = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message'] ?? localizations.invalidCredentials, style: const TextStyle(color: Colors.white)),

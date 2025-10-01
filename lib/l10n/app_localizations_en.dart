@@ -2367,6 +2367,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yes => 'Yes';
 
   @override
+  String get phoneMustBe10Digits => 'Phone number must be exactly 10 digits';
+
+  @override
+  String get phoneMustBeNumeric => 'Phone number must contain only numbers';
+
+  @override
   String get bookingSent =>
       'Your booking request was sent. You will receive a confirmation soon.';
 

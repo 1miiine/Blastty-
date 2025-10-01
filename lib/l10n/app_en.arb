@@ -903,6 +903,10 @@
   "downtownBranch": "Downtown Branch",
   "no": "No",
   "yes": "Yes",
+  "phoneNumber": "Phone Number",
+    "pleaseEnterPhoneNumber": "Please enter your phone number",
+    "phoneMustBe10Digits": "Phone number must be exactly 10 digits",
+    "phoneMustBeNumeric": "Phone number must contain only numbers",
   "bookingSent": "Your booking request was sent. You will receive a confirmation soon.",
  "searchBarHint": "Search for barbers, services...",
   "@searchBarHint": {

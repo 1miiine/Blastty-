@@ -5,6 +5,8 @@ import 'package:material_symbols_icons/symbols.dart'; // <-- Import Material Sym
 // import '../../services/auth_service.dart'; // Import your actual auth service when ready
 import '../../widgets/language_switcher_button.dart'; // <-- Import Language Switcher Button
 import '../../l10n/app_localizations.dart'; // <-- IMPORT LOCALIZATION
+import '../../services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // <-- Import RoleSelectionScreen for navigation
 
 /// A modern, square, and refined popup dialog for Terms and Conditions.
@@ -315,115 +317,110 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _phoneController = TextEditingController();
   bool _agreeToTerms = false;
   bool _isLoading = false;
   bool _isPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
 
+  Map<String, String> _serverErrors = {};
+
   // --- NEW: State variables for Gender Selection ---
   String? _selectedGender; // Can be 'male' or 'female'
 
   final mainBlue = const Color(0xFF3434C6); // Use consistent main blue
+  final AuthService _authService = AuthService();
 
   // --- FIX 2: CORRECT _register METHOD SIGNATURE ---
   Future<void> _register() async {
-    // --- UPDATE: Include gender validation if required ---
-    if (_formKey.currentState!.validate() && _agreeToTerms && _selectedGender != null) {
-      setState(() {
-        _isLoading = true;
-      });
+    setState(() {
+      _serverErrors = {};
+    });
 
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 2));
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      // --- Example: Basic check (replace with real auth service call) ---
-      // final AuthService authService = AuthService();
-      // final AuthResult result = await authService.registerWithEmailAndPassword(...);
+    final localizations = AppLocalizations.of(context)!;
 
-      // --- NEW REGISTER LOGIC ---
-      String? userRole; // Variable to hold the role of the newly registered user
+    if (_selectedGender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(localizations.pleaseSelectGender),
+              backgroundColor: Colors.orange
+          )
+      );
+      return;
+    }
 
-      // Example logic to determine role after registration
-      // In a real app, this would likely come from the registration response
-      // or you might default all new registrations to 'user' role.
-      // Let's assume successful registration assigns 'user' role.
-      // You might also perform an automatic login here.
-      // For example:
-      // try {
-      //   final newUser = await authService.registerWithEmailAndPassword(email, password, name);
-      //   userRole = newUser.role; // Assuming the registration returns user data with role
-      //   // OR default to user
-      //   userRole = 'user';
-      //   // Perform auto-login if needed
-      //   // await authService.autoLogin(newUser); // Hypothetical method
-      // } catch (regError) {
-      //   // Handle registration errors
-      //   // e.g., showSnackBar(context, localizations.registrationFailed);
-      //   // setState(_isLoading = false);
-      //   // return;
-      // }
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(localizations.pleaseAgreeToTerms),
+              backgroundColor: Colors.orange
+          )
+      );
+      return;
+    }
 
-      // For demonstration, assume successful registration creates a 'user'
-      userRole = 'user'; // <-- ASSUME SUCCESSFUL REGISTRATION CREATES A USER
+    setState(() {
+      _isLoading = true;
+    });
 
-      // --- SUCCESSFUL REGISTRATION (and potentially login) ---
-      setState(() {
-        _isLoading = false;
-      });
+    String genderForApi = _selectedGender == 'male' ? 'm' : 'f';
 
-      // --- LOCALIZED SUCCESS SNACKBAR ---
-      final localizations = AppLocalizations.of(context)!;
+    final result = await _authService.registerUser(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      gender: genderForApi,
+      phone: _phoneController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      // SUCCESS: The user was created and the token was saved.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localizations.registrationSuccess,
               style: const TextStyle(color: Colors.white)),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2), // Slightly shorter duration
         ),
       );
 
-      // --- NAVIGATE BASED ON ROLE (SAME LOGIC AS LOGIN) ---
-      String routeToNavigate;
-      if (userRole == 'barber') {
-        routeToNavigate = '/barber/home'; // Navigate to Barber Dashboard/Main Nav
-      } else if (userRole == 'user') {
-        // --- FIXED: Navigate to the CORRECT user main interface ---
-        routeToNavigate = '/user/home'; // <-- NAVIGATE TO THE SAME PLACE AS LOGIN
+      // Verify token was saved
+      final prefs = await SharedPreferences.getInstance();
+      final savedToken = prefs.getString('auth_token');
+
+      if (savedToken != null && savedToken.isNotEmpty) {
+        print('Token verified, navigating to home screen...');
+
+        // Add a small delay to ensure everything is processed
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/user/home', (route) => false);
+          }
+        });
       } else {
-        // Handle unexpected roles gracefully
-        routeToNavigate = '/role-selection';
-        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Unexpected user role")));
+        print('Error: Token not saved properly');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Registration successful but login failed. Please try logging in.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+
+        // Navigate to login screen instead
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/login', (route) => false);
+          }
+        });
       }
-
-      // --- CLEAR AUTH STACK AND NAVIGATE ---
-      // Use pushNamedAndRemoveUntil to ensure the user cannot go back to register/login
-      Navigator.pushNamedAndRemoveUntil(context, routeToNavigate, (route) => false);
-
-    // --- UPDATE: Handle case where gender is not selected ---
-    } else if (_selectedGender == null) {
-       setState(() {
-        _isLoading = false;
-      });
-      final localizations = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.pleaseSelectGender ?? 'Please select your gender.'), // <-- LOCALIZED ERROR
-          backgroundColor: Colors.orange,
-        ),
-      );
-    } else if (!_agreeToTerms) {
-      setState(() {
-        _isLoading = false;
-      });
-      // --- LOCALIZED AGREEMENT SNACKBAR ---
-      final localizations = AppLocalizations.of(context)!; // <-- GET LOCALIZATIONS INSIDE ELSE IF BLOCK IF NEEDED
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.pleaseAgreeToTerms,
-              style: const TextStyle(color: Colors.white)),
-          backgroundColor: Colors.orange,
-        ),
-      );
     }
   }
 
@@ -433,6 +430,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -542,12 +540,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return localizations.pleaseEnterFullName; // <-- LOCALIZED ERROR
-                            }
-                            if (value.trim().split(' ').length < 2) {
-                              return localizations.pleaseEnterFirstAndLast; // <-- LOCALIZED ERROR
-                            }
+                            if (_serverErrors.containsKey('name')) return _serverErrors['name'];
+                            if (value == null || value.isEmpty) return localizations.pleaseEnterFullName;
+                            if (value.trim().split(' ').length < 2) return localizations.pleaseEnterFirstAndLast;
                             return null;
                           },
                         ),
@@ -563,11 +558,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                           ),
                           validator: (value) {
+                            if (_serverErrors.containsKey('email')) return _serverErrors['email'];
+                            if (value == null || value.isEmpty) return localizations.pleaseEnterEmail;
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return localizations.pleaseEnterValidEmail;
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- Phone Field ---
+                        TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            labelText: localizations.phoneNumber ?? 'Phone Number',
+                            prefixIcon: const Icon(Icons.phone),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+                          ),
+                          validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return localizations.pleaseEnterEmail; // <-- LOCALIZED ERROR
+                              return localizations.pleaseEnterPhoneNumber ?? 'Please enter phone number';
                             }
-                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                              return localizations.pleaseEnterValidEmail; // <-- LOCALIZED ERROR
+                            if (value.length != 10) {
+                              return localizations.phoneMustBe10Digits ?? 'Phone must be 10 digits';
+                            }
+                            if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                              return localizations.phoneMustBeNumeric ?? 'Phone must contain only numbers';
                             }
                             return null;
                           },
@@ -596,16 +612,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return localizations.pleaseEnterPassword; // <-- LOCALIZED ERROR
+                            if (_serverErrors.containsKey('password')) return _serverErrors['password'];
+                            if (value == null || value.isEmpty) return localizations.pleaseEnterPassword;
+                            // FIX: Change 6 to 8 to match the backend validation
+                            if (value.length < 8) {
+                              return "Password must be at least 8 characters"; // Or use a new localization key
                             }
-                            if (value.length < 6) {
-                              return localizations.passwordTooShort; // <-- LOCALIZED ERROR
-                            }
-                            // Example: Require uppercase, lowercase, number, special char
-                            // if (!value.contains(RegExp(r'[A-Z]'))) {
-                            //   return localizations.passwordNeedsUppercase;
-                            // }
                             return null;
                           },
                         ),
